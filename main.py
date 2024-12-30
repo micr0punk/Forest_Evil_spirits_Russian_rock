@@ -34,7 +34,7 @@ class Board:
 
         self.grass_image = load_image("grass_image.png")
         self.border_image = load_image("border_image.png")
-        self.mage_image = load_image("mage_texture1.png")
+        self.mage_image = load_image("mage_texture2.png")
 
         self.where_x, self.where_y = 62, 90
 
@@ -107,11 +107,11 @@ def main():
     xr = xl = yu = yd = False
     #  test_hero = load_image("mage_texture.png")
 
-    width = 53
-    height = 25
+    width = 26
+    height = 12
     left = 62
     top = 90
-    cell_size = 32
+    cell_size = 64
 
     size = width_ww, height_ww = 1820, 980
 
@@ -147,16 +147,16 @@ def main():
                     xl = False
 
         if xr:
-            board.where_x += 32
+            board.where_x += 64
             xr = False
         elif xl:
-            board.where_x -= 32
+            board.where_x -= 64
             xl = False
         elif yu:
-            board.where_y -= 32
+            board.where_y -= 64
             yu = False
         elif yd:
-            board.where_y += 32
+            board.where_y += 64
             yd = False
 
         screen.fill((0, 0, 0))
