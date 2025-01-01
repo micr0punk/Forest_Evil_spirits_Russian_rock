@@ -1,6 +1,8 @@
 import pygame
 import os
 import sys
+import csv
+import copy
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -26,17 +28,33 @@ class Board:
     def __init__(self, width, height, screen, screen_width, screen_height):
         self.width = width
         self.height = height
-        self.board = [[0] * width for _ in range(height)]
+
+        # self.board = [[0] * width for _ in range(height)]
+        self.room = [[0] * width for _ in range(height)]
+        self.objects = [[0] * width for _ in range(height)]
+        self.player = [[0] * width for _ in range(height)]
+        self.player[height // 2 - 1][width // 2] = '5'
+
+
         self.left = 10
         self.top = 10
         self.cell_size = 32
-        self.mas = [[0] * width for _ in range(height)]
+
+        self.map_number = 1
 
         self.grass_image = load_image("grass_image.png")
         self.border_image = load_image("border_image.png")
         self.mage_image = load_image("mage_texture2.png")
+        self.boulder_image = load_image("boulder_image.png")
+        self.forest_exit_image = load_image("forest_exit.png")
 
-        self.where_x, self.where_y = 62, 90
+        self.where_x, self.where_y = 46 + 64, 90 + 64
+
+    def return_player_coords(self):
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.player[y][x] == '5':
+                    return y, x
 
     # настройка внешнего вида
     def set_view(self, left, top, cell_size):
@@ -46,17 +64,57 @@ class Board:
 
     def render(self, screen):
         cs = self.cell_size
+        with open(f'rooms/room_{self.map_number}.csv', encoding="utf8") as csvfile:
+            reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+            reader = list(reader)
+
+            for y in range(self.height):
+                for x in range(self.width):
+                    if reader[y][x] == '1':
+                        screen.blit(self.border_image, (x * cs + self.left, y * cs + self.top))
+                        self.room[y][x] = 1
+                    if reader[y][x] == '2':
+                        screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
+                        self.room[y][x] = 2
+                    if reader[y][x] == '4':
+                        screen.blit(self.forest_exit_image, (x * cs + self.left, y * cs + self.top))
+                        self.room[y][x] = 4
+
+
+        #  boardcopy = pygame.Surface(screen.get_size())
+
+        with open(f'objectmaps/objectmap_1.csv', encoding="utf8") as csvfile:
+            reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+            reader = list(reader)
+
+            for y in range(self.height):
+                for x in range(self.width):
+                    if reader[y][x] == '3':
+                        # boardcopy.blit(self.boulder_image, (x * cs + self.left, y * cs + self.top))
+                        screen.blit(self.boulder_image, (x * cs + self.left, y * cs + self.top))
+                        self.objects[y][x] = 3
+                    # if reader[y][x] == '5':
+                    #     # boardcopy.blit(self.mage_image, (x * cs + self.left, y * cs + self.top))
+                    #     screen.blit(self.mage_image, (x * cs + self.left, y * cs + self.top))
+                    #     self.objects[y][x] = 5
+
         for y in range(self.height):
             for x in range(self.width):
-                if (0 <= x <= 1 or 0 <= y <= 1 or self.width - 2 <= x <= self.width - 1 or
-                        self.height - 2 <= y <= self.height - 1):
-                    pygame.draw.rect(screen, pygame.Color('white'), (x * cs + self.left, y * cs + self.top, cs, cs))
-                    screen.blit(self.border_image, (x * cs + self.left, y * cs + self.top))
-                else:
-                    pygame.draw.rect(screen, pygame.Color('white'), (x * cs + self.left, y * cs + self.top, cs, cs))
-                    screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
+                if self.player[y][x] == '5':
+                    screen.blit(self.mage_image, (x * cs + self.left, y * cs + self.top))
 
-        screen.blit(self.mage_image, (self.where_x, self.where_y))
+        #  screen.blit(boardcopy, (0, 0))
+
+                # if (0 <= x <= 1 or 0 <= y <= 1 or self.width - 2 <= x <= self.width - 1 or
+                #         self.height - 2 <= y <= self.height - 1):
+                #     pygame.draw.rect(screen, pygame.Color('white'), (x * cs + self.left, y * cs + self.top, cs, cs))
+                #     screen.blit(self.border_image, (x * cs + self.left, y * cs + self.top))
+                #     self.mas[y][x] = 1
+                # else:
+                #     pygame.draw.rect(screen, pygame.Color('white'), (x * cs + self.left, y * cs + self.top, cs, cs))
+                #     screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
+
+        # screen.blit(self.mage_image, (self.where_x, self.where_y))
 
     def get_click(self, mouse_pos):
         cell = self.get_cell(mouse_pos)
@@ -84,21 +142,21 @@ class Board:
             xinst, yinst = coords[0], coords[1]
             for x in range(self.width):
                 coords[0] = x
-                state = self.mas[coords[1]][coords[0]]
+                state = self.room[coords[1]][coords[0]]
                 if self.is_in_table(mp):
                     if state == 0:
-                        self.mas[coords[1]][coords[0]] = 1
+                        self.room[coords[1]][coords[0]] = 1
                     else:
-                        self.mas[coords[1]][coords[0]] = 0
+                        self.room[coords[1]][coords[0]] = 0
             coords[0] = xinst
             for y in range(self.height):
                 coords[1] = y
-                state = self.mas[coords[1]][coords[0]]
+                state = self.room[coords[1]][coords[0]]
                 if self.is_in_table(mp):
                     if state == 0:
-                        self.mas[coords[1]][coords[0]] = 1
+                        self.room[coords[1]][coords[0]] = 1
                     elif state == 1 and not y == yinst:
-                        self.mas[coords[1]][coords[0]] = 0
+                        self.room[coords[1]][coords[0]] = 0
 
 
 def main():
@@ -107,9 +165,9 @@ def main():
     xr = xl = yu = yd = False
     #  test_hero = load_image("mage_texture.png")
 
-    width = 26
+    width = 27
     height = 12
-    left = 62
+    left = 46
     top = 90
     cell_size = 64
 
@@ -126,38 +184,83 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                board.map_number += 1
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     yu = True
+                    y, x = board.return_player_coords()
+                    try:
+                        if board.objects[y - 1][x] != 3 and board.room[y - 1][x] != 1:
+                            board.player[y][x] = '0'
+                            board.player[y - 1][x] = '5'
+                    except IndexError:
+                        pass
+
                 if event.key == pygame.K_DOWN:
                     yd = True
+                    y, x = board.return_player_coords()
+                    try:
+                        if board.objects[y + 1][x] != 3 and board.room[y + 1][x] != 1:
+                            board.player[y][x] = '0'
+                            board.player[y + 1][x] = '5'
+                    except IndexError:
+                        board.player[y][x] = '0'
+                        board.player[0][x] = '5'
+
                 if event.key == pygame.K_RIGHT:
                     xr = True
+                    y, x = board.return_player_coords()
+                    try:
+                        if board.objects[y][x + 1] != 3 and board.room[y][x + 1] != 1:
+                            board.player[y][x] = '0'
+                            board.player[y][x + 1] = '5'
+                    except IndexError:
+                        board.player[y][x] = '0'
+                        board.player[y][0] = '5'
+
                 if event.key == pygame.K_LEFT:
                     xl = True
+                    y, x = board.return_player_coords()
+                    try:
+                        if board.objects[y][x - 1] != 3 and board.room[y][x - 1] != 1:
+                            board.player[y][x] = '0'
+                            board.player[y][x - 1] = '5'
+                    except IndexError:
+                        pass
 
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_UP:
-                    yu = False
-                if event.key == pygame.K_DOWN:
-                    yd = False
-                if event.key == pygame.K_RIGHT:
-                    xr = False
-                if event.key == pygame.K_LEFT:
-                    xl = False
+            # if event.type == pygame.KEYUP:
+            #     if event.key == pygame.K_UP:
+            #         yu = False
+            #     if event.key == pygame.K_DOWN:
+            #         yd = False
+            #     if event.key == pygame.K_RIGHT:
+            #         xr = False
+            #     if event.key == pygame.K_LEFT:
+            #         xl = False
 
-        if xr:
-            board.where_x += 64
-            xr = False
-        elif xl:
-            board.where_x -= 64
-            xl = False
-        elif yu:
-            board.where_y -= 64
-            yu = False
-        elif yd:
-            board.where_y += 64
-            yd = False
+        # if xr:
+        #     coords = board.where_x + 64, board.where_y
+        #     if board.is_in_table(coords):
+        #         board.where_x += 64
+        #     xr = False
+        # elif xl:
+        #     coords = board.where_x - 64, board.where_y
+        #     if board.is_in_table(coords):
+        #         board.where_x -= 64
+        #     xl = False
+        # elif yu:
+        #     coords = board.where_x, board.where_y - 64
+        #     if board.is_in_table(coords):
+        #         board.where_y -= 64
+        #     yu = False
+        # elif yd:
+        #     coords = board.where_x, board.where_y + 64
+        #     if board.is_in_table(coords):
+        #         board.where_y += 64
+        #     yd = False
 
         screen.fill((0, 0, 0))
         board.render(screen)
