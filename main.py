@@ -2,7 +2,9 @@ import pygame
 import os
 import sys
 import csv
-import copy
+from random import choice
+from pathlib import Path
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -33,8 +35,8 @@ class Board:
         self.room = [[0] * width for _ in range(height)]
         self.objects = [[0] * width for _ in range(height)]
         self.player = [[0] * width for _ in range(height)]
-        self.player[height // 2 - 1][width // 2] = '5'
-
+        self.player[height // 2][width // 2] = '5'
+        self.current_room_y,  self.current_room_x = 6, 13
 
         self.left = 10
         self.top = 10
@@ -50,6 +52,19 @@ class Board:
 
         self.where_x, self.where_y = 46 + 64, 90 + 64
 
+        self.roomsfolder = Path('rooms')
+        self.number_of_rooms = len(list(self.roomsfolder.iterdir()))
+
+        self.objectmapsfolder = Path('objectmaps')
+        self.number_of_objectmaps = len(list(self.objectmapsfolder.iterdir()))
+        self.pool_of_objectmaps = [x for x in range(1, self.number_of_objectmaps + 1)]
+
+        self.levelmapsfolder = Path('levelmaps')
+        self.number_of_levelmaps = len(list(self.levelmapsfolder.iterdir()))
+        self.pool_of_levelmaps = [x for x in range(1, self.number_of_levelmaps + 1)]
+        self.currentlevel = choice(self.pool_of_levelmaps)
+
+
     def return_player_coords(self):
         for y in range(self.height):
             for x in range(self.width):
@@ -64,26 +79,31 @@ class Board:
 
     def render(self, screen):
         cs = self.cell_size
-        with open(f'rooms/room_{self.map_number}.csv', encoding="utf8") as csvfile:
-            reader = csv.reader(csvfile, delimiter=';', quotechar='"')
-            reader = list(reader)
+        try:
+            with open(f'levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile1:
+                reader1 = csv.reader(csvfile1, delimiter=';', quotechar='"')
+                reader1 = list(reader1)
+                with open(f'rooms/room_{reader1[self.current_room_y][self.current_room_x]}.csv', encoding="utf8") as csvfile:
+                    reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+                    reader = list(reader)
+                    for y in range(self.height):
+                        for x in range(self.width):
+                            if reader[y][x] == '1':
+                                screen.blit(self.border_image, (x * cs + self.left, y * cs + self.top))
+                                self.room[y][x] = 1
+                            if reader[y][x] == '2':
+                                screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
+                                self.room[y][x] = 2
+                            if reader[y][x] == '4':
+                                screen.blit(self.forest_exit_image, (x * cs + self.left, y * cs + self.top))
+                                self.room[y][x] = 4
 
-            for y in range(self.height):
-                for x in range(self.width):
-                    if reader[y][x] == '1':
-                        screen.blit(self.border_image, (x * cs + self.left, y * cs + self.top))
-                        self.room[y][x] = 1
-                    if reader[y][x] == '2':
-                        screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
-                        self.room[y][x] = 2
-                    if reader[y][x] == '4':
-                        screen.blit(self.forest_exit_image, (x * cs + self.left, y * cs + self.top))
-                        self.room[y][x] = 4
-
+        except FileNotFoundError:
+            sys.exit()
 
         #  boardcopy = pygame.Surface(screen.get_size())
 
-        with open(f'objectmaps/objectmap_1.csv', encoding="utf8") as csvfile:
+        with open(f'objectmaps/objectmap_{self.pool_of_objectmaps[0]}.csv', encoding="utf8") as csvfile:
             reader = csv.reader(csvfile, delimiter=';', quotechar='"')
             reader = list(reader)
 
@@ -162,13 +182,13 @@ class Board:
 def main():
     pygame.init()
     running = True
-    xr = xl = yu = yd = False
+    # xr = xl = yu = yd = False
     #  test_hero = load_image("mage_texture.png")
 
     width = 27
-    height = 12
+    height = 13
     left = 46
-    top = 90
+    top = 74
     cell_size = 64
 
     size = width_ww, height_ww = 1820, 980
@@ -190,17 +210,26 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    yu = True
+                    # yu = True
                     y, x = board.return_player_coords()
                     try:
                         if board.objects[y - 1][x] != 3 and board.room[y - 1][x] != 1:
+                            if y - 1 >= 0:
+                                board.player[y][x] = '0'
+                                board.player[y - 1][x] = '5'
+                            else:
+                                board.current_room_y -= 1
+                                board.player[y][x] = '0'
+                                board.player[height - 1][x] = '5'
+                        else:
+                            board.current_room_y -= 1
                             board.player[y][x] = '0'
-                            board.player[y - 1][x] = '5'
+                            board.player[height - 1][x] = '5'
                     except IndexError:
                         pass
 
                 if event.key == pygame.K_DOWN:
-                    yd = True
+                    # yd = True
                     y, x = board.return_player_coords()
                     try:
                         if board.objects[y + 1][x] != 3 and board.room[y + 1][x] != 1:
@@ -209,9 +238,10 @@ def main():
                     except IndexError:
                         board.player[y][x] = '0'
                         board.player[0][x] = '5'
+                        board.current_room_y += 1
 
                 if event.key == pygame.K_RIGHT:
-                    xr = True
+                    # xr = True
                     y, x = board.return_player_coords()
                     try:
                         if board.objects[y][x + 1] != 3 and board.room[y][x + 1] != 1:
@@ -220,14 +250,25 @@ def main():
                     except IndexError:
                         board.player[y][x] = '0'
                         board.player[y][0] = '5'
+                        board.current_room_x += 1
 
                 if event.key == pygame.K_LEFT:
-                    xl = True
+                    # xl = True
                     y, x = board.return_player_coords()
                     try:
                         if board.objects[y][x - 1] != 3 and board.room[y][x - 1] != 1:
+                            if x - 1 >= 0:
+                                board.player[y][x] = '0'
+                                board.player[y][x - 1] = '5'
+                            else:
+                                board.current_room_x -= 1
+                                board.player[y][x] = '0'
+                                board.player[y][width - 1] = '5'
+                        else:
+                            board.current_room_x -= 1
                             board.player[y][x] = '0'
-                            board.player[y][x - 1] = '5'
+                            board.player[y][width - 1] = '5'
+
                     except IndexError:
                         pass
 
