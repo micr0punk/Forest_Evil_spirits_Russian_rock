@@ -34,6 +34,7 @@ class Board:
         # self.board = [[0] * width for _ in range(height)]
         self.room = [[0] * width for _ in range(height)]
         self.objects = [[0] * width for _ in range(height)]
+        self.seen = [[0] * width for _ in range(height)]
         self.player = [[0] * width for _ in range(height)]
         self.player[height // 2][width // 2] = '5'
         self.current_room_y,  self.current_room_x = 6, 13
@@ -58,6 +59,7 @@ class Board:
         self.objectmapsfolder = Path('objectmaps')
         self.number_of_objectmaps = len(list(self.objectmapsfolder.iterdir()))
         self.pool_of_objectmaps = [x for x in range(1, self.number_of_objectmaps + 1)]
+        self.objectmaps_game_pool = [[choice(self.pool_of_objectmaps)] * width for _ in range(height)]
 
         self.levelmapsfolder = Path('levelmaps')
         self.number_of_levelmaps = len(list(self.levelmapsfolder.iterdir()))
@@ -77,13 +79,14 @@ class Board:
         self.top = top
         self.cell_size = cell_size
 
-    def render(self, screen):
+    def render(self, screen, width, height):
         cs = self.cell_size
         try:
             with open(f'levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile1:
                 reader1 = csv.reader(csvfile1, delimiter=';', quotechar='"')
                 reader1 = list(reader1)
                 with open(f'rooms/room_{reader1[self.current_room_y][self.current_room_x]}.csv', encoding="utf8") as csvfile:
+                    self.seen[self.current_room_y][self.current_room_x] = 1
                     reader = csv.reader(csvfile, delimiter=';', quotechar='"')
                     reader = list(reader)
                     for y in range(self.height):
@@ -103,7 +106,9 @@ class Board:
 
         #  boardcopy = pygame.Surface(screen.get_size())
 
-        with open(f'objectmaps/objectmap_{self.pool_of_objectmaps[0]}.csv', encoding="utf8") as csvfile:
+        with open(f'objectmaps/objectmap_{self.objectmaps_game_pool[self.current_room_y][self.current_room_x]}.csv',
+                  encoding="utf8") as csvfile:
+            self.objects = [[0] * width for _ in range(height)]
             reader = csv.reader(csvfile, delimiter=';', quotechar='"')
             reader = list(reader)
 
@@ -135,6 +140,42 @@ class Board:
                 #     screen.blit(self.grass_image, (x * cs + self.left, y * cs + self.top))
 
         # screen.blit(self.mage_image, (self.where_x, self.where_y))
+
+    def map_render(self, screen):
+        cs = self.cell_size
+        screen.fill((68,148,74))
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.seen[y][x] == 1:
+                    pygame.draw.rect(screen, pygame.Color('white'), (x * cs + self.left, y * cs + self.top, cs, cs))
+                    pygame.draw.rect(screen, pygame.Color('brown'), (x * cs + self.left, y * cs + self.top, cs, cs), 1)
+                    with open(f'levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile1:
+                        reader1 = csv.reader(csvfile1, delimiter=';', quotechar='"')
+                        reader1 = list(reader1)
+                        if reader1[y][x + 1] != '0' and self.seen[y][x + 1] != 1:
+                            pygame.draw.rect(screen, pygame.Color('black'),
+                                             (x * cs + self.left + cs, y * cs + self.top, cs, cs))
+                            pygame.draw.rect(screen, pygame.Color('brown'),
+                                             (x * cs + self.left + cs, y * cs + self.top, cs, cs),1)
+                        if reader1[y][x - 1] != '0' and self.seen[y][x - 1] != 1:
+                            pygame.draw.rect(screen, pygame.Color('black'),
+                                             (x * cs + self.left - cs, y * cs + self.top, cs, cs))
+                            pygame.draw.rect(screen, pygame.Color('brown'),
+                                             (x * cs + self.left - cs, y * cs + self.top, cs, cs),1)
+                        if reader1[y + 1][x] != '0' and self.seen[y + 1][x] != 1:
+                            pygame.draw.rect(screen, pygame.Color('black'),
+                                             (x * cs + self.left, y * cs + self.top + cs, cs, cs))
+                            pygame.draw.rect(screen, pygame.Color('brown'),
+                                             (x * cs + self.left, y * cs + self.top + cs, cs, cs),1)
+                        if reader1[y - 1][x] != '0' and self.seen[y - 1][x] != 1:
+                            pygame.draw.rect(screen, pygame.Color('black'),
+                                             (x * cs + self.left, y * cs + self.top - cs, cs, cs))
+                            pygame.draw.rect(screen, pygame.Color('brown'),
+                                             (x * cs + self.left, y * cs + self.top - cs, cs, cs),1)
+                if self.current_room_x == x and self.current_room_y == y:
+                    cs1 = cs // 2
+                    pygame.draw.rect(screen, pygame.Color('black'), (x * cs + self.left + cs1 // 2, y * cs +
+                                                                     self.top + cs1 // 2, cs1, cs1))
 
     def get_click(self, mouse_pos):
         cell = self.get_cell(mouse_pos)
@@ -182,6 +223,7 @@ class Board:
 def main():
     pygame.init()
     running = True
+    render_map = False
     # xr = xl = yu = yd = False
     #  test_hero = load_image("mage_texture.png")
 
@@ -209,11 +251,19 @@ def main():
                 board.map_number += 1
 
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_m:
+                    if not render_map:
+                        render_map = True
+                    else:
+                        render_map = False
+
                 if event.key == pygame.K_UP:
                     # yu = True
                     y, x = board.return_player_coords()
                     try:
+                        print(board.objects[y - 1][x], board.room[y - 1][x])
                         if board.objects[y - 1][x] != 3 and board.room[y - 1][x] != 1:
+                            print(y - 1)
                             if y - 1 >= 0:
                                 board.player[y][x] = '0'
                                 board.player[y - 1][x] = '5'
@@ -221,10 +271,15 @@ def main():
                                 board.current_room_y -= 1
                                 board.player[y][x] = '0'
                                 board.player[height - 1][x] = '5'
-                        else:
-                            board.current_room_y -= 1
-                            board.player[y][x] = '0'
-                            board.player[height - 1][x] = '5'
+                        elif board.objects[y - 1][x] != 3 and board.room[y - 1][x] == 1:
+                            if board.room[y][x] == 4 and y == 0:
+                                board.current_room_y -= 1
+                                board.player[y][x] = '0'
+                                board.player[height - 1][x] = '5'
+                        # else:
+                        #     board.current_room_y -= 1
+                        #     board.player[y][x] = '0'
+                        #     board.player[height - 1][x] = '5'
                     except IndexError:
                         pass
 
@@ -264,10 +319,11 @@ def main():
                                 board.current_room_x -= 1
                                 board.player[y][x] = '0'
                                 board.player[y][width - 1] = '5'
-                        else:
-                            board.current_room_x -= 1
-                            board.player[y][x] = '0'
-                            board.player[y][width - 1] = '5'
+                        elif board.objects[y][x - 1] != 3 and board.room[y][x - 1] == 1:
+                            if board.room[y][x] == 4 and x == 0:
+                                board.current_room_x -= 1
+                                board.player[y][x] = '0'
+                                board.player[y][width - 1] = '5'
 
                     except IndexError:
                         pass
@@ -304,7 +360,10 @@ def main():
         #     yd = False
 
         screen.fill((0, 0, 0))
-        board.render(screen)
+        if not render_map:
+            board.render(screen, width, height)
+        else:
+            board.map_render(screen)
 
         pygame.display.flip()
 
