@@ -225,7 +225,6 @@ def main():
     running = True
     render_map = False
     # xr = xl = yu = yd = False
-    #  test_hero = load_image("mage_texture.png")
 
     width = 27
     height = 13
