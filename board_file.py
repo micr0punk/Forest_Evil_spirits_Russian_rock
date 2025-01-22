@@ -10,7 +10,7 @@ from animated_sprite import AnimatedSprite
 #  Создаём функцию, которая вычисляет количество номерных карт уровней
 def value_of_rooms(current_map):
     current_number_of_rooms = 0
-    with open(f'maps/map_{current_map}.csv', encoding="utf8") as csvfile:
+    with open(f'map_folder\\maps/map_{current_map}.csv', encoding="utf8") as csvfile:
         reader = list(csv.reader(csvfile, delimiter=';', quotechar='"'))
         for x in range(len(reader)):
             for y in range(len(reader[x])):
@@ -34,42 +34,45 @@ class Board:
         self.screen_left = left_indent
 
         #  Задаём пул номерных карт и текущую карту
-        maps_folder = Path('maps')
+        maps_folder = Path('map_folder\\maps')
         number_of_maps = len(list(maps_folder.iterdir()))
         pool_of_maps = [number for number in range(1, number_of_maps + 1)]
         current_map = choice(pool_of_maps)
 
         #  Задаём пул карт уровней и текущую карту уровня
-        levelmaps_folder = Path('levelmaps')
+        levelmaps_folder = Path('map_folder\\levelmaps')
         number_of_levelmaps = len(list(levelmaps_folder.iterdir()))
         pool_of_levelmaps = [number for number in range(1, number_of_levelmaps + 1)]
         self.currentlevel = choice(pool_of_levelmaps)
+
+        self.currentlevel = current_map
 
         self.rooms_list = [[0] * x_cells for _ in range(y_cells)]
 
         try:
             #  Инициализируем трёхмерный список всех комнат уровня единожды, при создании объекта
             self.rooms = [0] * value_of_rooms(current_map)
-            with open(f'maps/map_{current_map}.csv', encoding="utf8") as csvfile:
+            with open(f'map_folder\\maps/map_{current_map}.csv', encoding="utf8") as csvfile:
                 self.game_map = list(csv.reader(csvfile, delimiter=';', quotechar='"'))
-                with open(f'levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile_1:
+                with open(f'map_folder\\levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile_1:
                     levelmap = list(csv.reader(csvfile_1, delimiter=';', quotechar='"'))
+                    self.levelmap_for_render = levelmap
                     for y in range(y_cells):
                         for x in range(x_cells):
                             current_room_number = int(self.game_map[y][x])
                             self.rooms_list[y][x] = current_room_number
                             if current_room_number != 0:
-                                with open(f'rooms/room_{levelmap[y][x]}.csv', encoding="utf8") as csvfile_2:
+                                with open(f'map_folder\\rooms/room_{levelmap[y][x]}.csv', encoding="utf8") as csvfile_2:
                                     room = list(csv.reader(csvfile_2, delimiter=';', quotechar='"'))
                                     self.rooms[current_room_number - 1] = room
 
             #  Создаём пул карт объектов
-            objectmapsfolder = Path('objectmaps')
+            objectmapsfolder = Path('map_folder\\objectmaps')
             number_of_objectmaps = len(list(objectmapsfolder.iterdir()))
             self.pool_of_objectmaps = [0] * number_of_objectmaps
 
             for x in range(1, number_of_objectmaps + 1):
-                with open(f'objectmaps/objectmap_{x}.csv', encoding="utf8") as csvfile_3:
+                with open(f'map_folder\\objectmaps/objectmap_{x}.csv', encoding="utf8") as csvfile_3:
                     objectmap = list(csv.reader(csvfile_3, delimiter=';', quotechar='"'))
                     self.pool_of_objectmaps[x - 1] = objectmap
 
@@ -82,6 +85,9 @@ class Board:
 
         #  Выходим, если искомого файла не существует
         except FileNotFoundError:
+            print(current_map)
+            print(self.currentlevel)
+            print('Не удалось загрузить файл/ы')
             sys.exit()
 
         # print(self.rooms)
@@ -155,9 +161,9 @@ class Board:
     def set_view(self, left, top, cell_size):
         self.left = left
         self.top = top
-        self.cell_size = cell_size
+        self.cs = cell_size
 
-    def map_render(self, screen):
+    def map_render(self, screen, is_minimap=None):
         #  Отрисовка карты игры. Сначала заливает весь экран бледно-зелёным
         screen.fill((68, 148, 74))
         for y in range(self.height_in_cells):
@@ -168,39 +174,38 @@ class Board:
                                      (x * self.cs + self.left, y * self.cs + self.top, self.cs, self.cs))
                     pygame.draw.rect(screen, pygame.Color('brown'),
                                      (x * self.cs + self.left, y * self.cs + self.top, self.cs, self.cs), 1)
-                    with open(f'levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile1:
-                        reader1 = csv.reader(csvfile1, delimiter=';', quotechar='"')
-                        reader1 = list(reader1)
-                        #  Так как при обычном рендере мы записали в self.seen позиции где бы и не был персонаж,
-                        #  то мы можем с огромной лёгкостью отрисовать карту
-                        if reader1[y][x + 1] != '0' and self.seen[y][x + 1] != 1:
-                            pygame.draw.rect(screen, pygame.Color('black'),
-                                             (x * self.cs + self.left + self.cs, y * self.cs + self.top,
-                                              self.cs, self.cs))
-                            pygame.draw.rect(screen, pygame.Color('brown'),
-                                             (x * self.cs + self.left + self.cs, y * self.cs + self.top,
-                                              self.cs, self.cs), 1)
-                        if reader1[y][x - 1] != '0' and self.seen[y][x - 1] != 1:
-                            pygame.draw.rect(screen, pygame.Color('black'),
-                                             (x * self.cs + self.left - self.cs, y * self.cs + self.top,
-                                              self.cs, self.cs))
-                            pygame.draw.rect(screen, pygame.Color('brown'),
-                                             (x * self.cs + self.left - self.cs, y * self.cs + self.top,
-                                              self.cs, self.cs), 1)
-                        if reader1[y + 1][x] != '0' and self.seen[y + 1][x] != 1:
-                            pygame.draw.rect(screen, pygame.Color('black'),
-                                             (x * self.cs + self.left, y * self.cs + self.top + self.cs,
-                                              self.cs, self.cs))
-                            pygame.draw.rect(screen, pygame.Color('brown'),
-                                             (x * self.cs + self.left, y * self.cs + self.top + self.cs,
-                                              self.cs, self.cs), 1)
-                        if reader1[y - 1][x] != '0' and self.seen[y - 1][x] != 1:
-                            pygame.draw.rect(screen, pygame.Color('black'),
-                                             (x * self.cs + self.left, y * self.cs + self.top - self.cs,
-                                              self.cs, self.cs))
-                            pygame.draw.rect(screen, pygame.Color('brown'),
-                                             (x * self.cs + self.left, y * self.cs + self.top - self.cs,
-                                              self.cs, self.cs), 1)
+
+                    reader1 = self.levelmap_for_render
+                    #  Так как при обычном рендере мы записали в self.seen позиции где бы и не был персонаж,
+                    #  то мы можем с огромной лёгкостью отрисовать карту
+                    if reader1[y][x + 1] != '0' and self.seen[y][x + 1] != 1:
+                        pygame.draw.rect(screen, pygame.Color('black'),
+                                         (x * self.cs + self.left + self.cs, y * self.cs + self.top,
+                                          self.cs, self.cs))
+                        pygame.draw.rect(screen, pygame.Color('brown'),
+                                         (x * self.cs + self.left + self.cs, y * self.cs + self.top,
+                                          self.cs, self.cs), 1)
+                    if reader1[y][x - 1] != '0' and self.seen[y][x - 1] != 1:
+                        pygame.draw.rect(screen, pygame.Color('black'),
+                                         (x * self.cs + self.left - self.cs, y * self.cs + self.top,
+                                          self.cs, self.cs))
+                        pygame.draw.rect(screen, pygame.Color('brown'),
+                                         (x * self.cs + self.left - self.cs, y * self.cs + self.top,
+                                          self.cs, self.cs), 1)
+                    if reader1[y + 1][x] != '0' and self.seen[y + 1][x] != 1:
+                        pygame.draw.rect(screen, pygame.Color('black'),
+                                         (x * self.cs + self.left, y * self.cs + self.top + self.cs,
+                                          self.cs, self.cs))
+                        pygame.draw.rect(screen, pygame.Color('brown'),
+                                         (x * self.cs + self.left, y * self.cs + self.top + self.cs,
+                                          self.cs, self.cs), 1)
+                    if reader1[y - 1][x] != '0' and self.seen[y - 1][x] != 1:
+                        pygame.draw.rect(screen, pygame.Color('black'),
+                                         (x * self.cs + self.left, y * self.cs + self.top - self.cs,
+                                          self.cs, self.cs))
+                        pygame.draw.rect(screen, pygame.Color('brown'),
+                                         (x * self.cs + self.left, y * self.cs + self.top - self.cs,
+                                          self.cs, self.cs), 1)
                 if self.current_room_x == x and self.current_room_y == y:
                     cs1 = self.cs // 2
                     pygame.draw.rect(screen, pygame.Color('black'),
@@ -213,17 +218,17 @@ class Board:
     # После нажатия кнопкой мыши возвращает клетку, в которой произошло нажатие
     def get_cell(self, mp):
         where_x, where_y = mp
-        if self.left <= where_x <= self.left + self.cell_size * self.width_in_cells and \
-                self.top <= where_y <= self.top + self.cell_size * self.height_in_cells:
-            return where_x // self.cell_size - 2, where_y // self.cell_size - 2
+        if self.left <= where_x <= self.left + self.cs * self.width_in_cells and \
+                self.top <= where_y <= self.top + self.cs * self.height_in_cells:
+            return where_x // self.cs - 2, where_y // self.cs - 2
         else:
             return None
 
     #  Функция. Возвращает True, если координаты нажатия кнопкой мыши находятся в пределах игрового поля
     def is_in_table(self, mp):
         where_x, where_y = mp
-        if self.left <= where_x <= self.left + self.cell_size * self.width_in_cells and \
-                self.top <= where_y <= self.top + self.cell_size * self.height_in_cells:
+        if self.left <= where_x <= self.left + self.cs * self.width_in_cells and \
+                self.top <= where_y <= self.top + self.cs * self.height_in_cells:
             return True
         else:
             return False
