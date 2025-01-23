@@ -1,6 +1,7 @@
 import pygame
 import board_file
 from characters import Mage
+from load_image_file import load_image
 
 
 def main():
@@ -26,6 +27,8 @@ def main():
     #  Задаём экран, с которым будем работать
     screen = pygame.display.set_mode(size)
 
+    clock = pygame.time.Clock()
+
     #  Создаём объект персонажа (Маг)
     player = Mage(1, 'Маг', 1, 13, 6, 100, 4, 10)
     player_data = player.data
@@ -44,6 +47,13 @@ def main():
     pygame.mixer.music.load('audio/MertviyAnarchist.mp3')
     pygame.mixer.music.set_volume(0.2)
     pygame.mixer.music.play(-1)
+
+    moving_r = moving_d = moving_l = moving_u = False
+    animation_image = load_image("room_animation.png")
+    animation_x_for_r = -3000
+    animation_x_for_l = 3000
+    animation_y_for_d = -3000
+    animation_y_for_u = 3000
 
     #  Основной игровой цикл
     while running:
@@ -79,12 +89,14 @@ def main():
                                 board.player[y - 1][x] = '5'
                             # Также рассматриваем случаи когда персонаж находится на выходе из комнаты
                             else:
+                                moving_u = True
                                 board.current_room_y -= 1
                                 board.player[y][x] = '0'
                                 board.player[y_cells - 1][x] = '5'
                         # Точно так же и тут, рассматриваем случаи когда персонаж находится на выходе из комнаты
                         elif board.objectmap_for_render[y - 1][x] != '3' and board.room_for_render[y - 1][x] == '1':
                             if board.room_for_render[y][x] == '4' and y == 0:
+                                moving_u = True
                                 board.current_room_y -= 1
                                 board.player[y][x] = '0'
                                 board.player[y_cells - 1][x] = '5'
@@ -108,6 +120,7 @@ def main():
                     #  Примечательно, что при перемещении вниз и вправо, благодаря исключению ошибки на индексацию,
                     #  мы можем избежать дополнительных проверок
                     except IndexError:
+                        moving_d = True
                         board.player[y][x] = '0'
                         board.player[0][x] = '5'
                         board.current_room_y += 1
@@ -124,6 +137,7 @@ def main():
                             board.player[y][x] = '0'
                             board.player[y][x + 1] = '5'
                     except IndexError:
+                        moving_r = True
                         board.player[y][x] = '0'
                         board.player[y][0] = '5'
                         board.current_room_x += 1
@@ -141,11 +155,13 @@ def main():
                                 board.player[y][x] = '0'
                                 board.player[y][x - 1] = '5'
                             else:
+                                moving_l = True
                                 board.current_room_x -= 1
                                 board.player[y][x] = '0'
                                 board.player[y][x_cells - 1] = '5'
                         elif board.objectmap_for_render[y][x - 1] != '3' and board.room_for_render[y][x - 1] == '1':
                             if board.room_for_render[y][x] == '4' and x == 0:
+                                moving_l = True
                                 board.current_room_x -= 1
                                 board.player[y][x] = '0'
                                 board.player[y][x_cells - 1] = '5'
@@ -163,6 +179,50 @@ def main():
             board.map_render(screen)  # иначе – карту
 
         #  player_data_print = board.player_data
+
+        if moving_r:
+            animation_x_for_r += 400
+
+            if animation_x_for_r == 0:
+                animation_x_for_r = -3000
+                moving_r = False
+
+            screen.blit(animation_image, (animation_x_for_r, 0))
+            pygame.display.flip()
+
+        if moving_d:
+            animation_y_for_d += 300
+
+            if animation_y_for_d == 0:
+                animation_y_for_d = -3000
+                moving_d = False
+
+            screen.blit(animation_image, (0, animation_y_for_d))
+            pygame.display.flip()
+
+
+        if moving_l:
+            animation_x_for_l -= 400
+
+            if animation_x_for_l == 0:
+                animation_x_for_l = 3000
+                moving_l = False
+
+            screen.blit(animation_image, (animation_x_for_l, 0))
+            pygame.display.flip()
+
+
+        if moving_u:
+            animation_y_for_u -= 300
+
+            if animation_y_for_u == 0:
+                animation_y_for_u = 3000
+                moving_u = False
+
+            screen.blit(animation_image, (0, animation_y_for_u))
+            pygame.display.flip()
+
+        clock.tick(60)
 
         #  Обновляем кадр в целом
         pygame.display.flip()

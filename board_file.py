@@ -49,6 +49,8 @@ class Board:
 
         self.rooms_list = [[0] * x_cells for _ in range(y_cells)]
 
+        #  self.
+
         try:
             #  Инициализируем трёхмерный список всех комнат уровня единожды, при создании объекта
             self.rooms = [0] * value_of_rooms(current_map)
