@@ -112,8 +112,8 @@ class Board:
         # Передача в класс Board текстур разных поверхностей и персонажей
         self.grass_image = load_image("grass_image.png")
         self.border_image = load_image("border_image.png")
-        #  self.mage_image = load_image("mage_texture2.png")
-        self.mage_sprite = AnimatedSprite(load_image("mage_texture2.png"), 4, 4, 64, 64)
+        #  self.mage_image = load_image("mage_texture.png")
+        self.mage_sprite = AnimatedSprite(load_image("mage_texture.png"), 4, 4, 64, 64)
         self.mage_image = self.mage_sprite.frames[self.mage_sprite.cur_frame]
         self.boulder_image = load_image("boulder_image.png")
         self.forest_exit_image = load_image("forest_exit.png")

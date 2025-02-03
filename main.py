@@ -30,7 +30,7 @@ def main():
     clock = pygame.time.Clock()
 
     #  Создаём объект персонажа (Маг)
-    player = Mage(1, 'Маг', 1, 13, 6, 100, 4, 10)
+    player = Mage([1, 'Маг', 1, 13, 6, 100, 4, 10])
     player_data = player.data
 
     #  Создаём объект игрового поля
@@ -50,10 +50,8 @@ def main():
 
     moving_r = moving_d = moving_l = moving_u = False
     animation_image = load_image("room_animation.png")
-    animation_x_for_r = -3000
-    animation_x_for_l = 3000
-    animation_y_for_d = -3000
-    animation_y_for_u = 3000
+    animation_x_for_r = animation_y_for_d = -3000
+    animation_x_for_l = animation_y_for_u = 3000
 
     #  Основной игровой цикл
     while running:
@@ -181,45 +179,45 @@ def main():
         #  player_data_print = board.player_data
 
         if moving_r:
-            animation_x_for_r += 400
+            animation_x_for_r += 1500
 
-            if animation_x_for_r == 0:
+            if animation_x_for_r > 0:
                 animation_x_for_r = -3000
                 moving_r = False
 
-            screen.blit(animation_image, (animation_x_for_r, 0))
+            screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
         if moving_d:
-            animation_y_for_d += 300
+            animation_y_for_d += 1500
 
-            if animation_y_for_d == 0:
+            if animation_y_for_d > 0:
                 animation_y_for_d = -3000
                 moving_d = False
 
-            screen.blit(animation_image, (0, animation_y_for_d))
+            screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
 
         if moving_l:
-            animation_x_for_l -= 400
+            animation_x_for_l -= 1500
 
-            if animation_x_for_l == 0:
+            if animation_x_for_l < 0:
                 animation_x_for_l = 3000
                 moving_l = False
 
-            screen.blit(animation_image, (animation_x_for_l, 0))
+            screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
 
         if moving_u:
-            animation_y_for_u -= 300
+            animation_y_for_u -= 1500
 
-            if animation_y_for_u == 0:
+            if animation_y_for_u < 0:
                 animation_y_for_u = 3000
                 moving_u = False
 
-            screen.blit(animation_image, (0, animation_y_for_u))
+            screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
         clock.tick(60)
