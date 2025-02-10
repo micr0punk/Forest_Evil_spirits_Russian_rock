@@ -17,6 +17,7 @@ def add_event_to_db(date_fr_f, event_fr_f, marker_fr_f, time_fr_f):
         print(e)
         print('Не удалось подключится к базе данных')
 
+
 #  Изменение события в БД
 def change_event_in_db(event, date_fr_f, event_fr_f, marker_fr_f, time_fr_f):
     try:
@@ -30,6 +31,7 @@ def change_event_in_db(event, date_fr_f, event_fr_f, marker_fr_f, time_fr_f):
         print(e)
         print('Не удалось подключится к базе данных')
 
+
 #  Удаление события из БД
 def delete_event_from_db(event_func, date_func, time_func):
     try:
@@ -42,6 +44,7 @@ def delete_event_from_db(event_func, date_func, time_func):
     except Exception as e:
         print(e)
         print('Не удалось подключится к базе данных')
+
 
 #  Экспорт БД в CSV файл
 def export_to_csv(directory):
@@ -70,6 +73,7 @@ def export_to_csv(directory):
     except Exception as e:
         print(e)
         print('Не удалось записать базу данных в CSV файл')
+
 
 #  Импорт в БД из CSV файла
 def import_from_csv(file_name):
@@ -117,6 +121,7 @@ def import_from_csv(file_name):
     except Exception as e:
         print(e)
         print('Не удалось удалить временный файл')
+
 
 #  Полная очистка БД
 def delete_all_from_db():

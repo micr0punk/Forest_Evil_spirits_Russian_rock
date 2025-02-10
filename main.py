@@ -198,7 +198,6 @@ def main():
             screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
-
         if moving_l:
             animation_x_for_l -= 1500
 
@@ -208,7 +207,6 @@ def main():
 
             screen.blit(animation_image, (0, 0))
             pygame.display.flip()
-
 
         if moving_u:
             animation_y_for_u -= 1500

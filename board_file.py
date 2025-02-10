@@ -1,10 +1,11 @@
 import pygame
 import sys
 import csv
-from random import choice
+from random import choice, randint
 from pathlib import Path
 from load_image_file import load_image
 from animated_sprite import AnimatedSprite
+from database_file import load_items_from_db
 
 
 #  Создаём функцию, которая вычисляет количество номерных карт уровней
@@ -21,6 +22,19 @@ def value_of_rooms(current_map):
     return current_number_of_rooms
 
 
+def x_and_y_from_game_map(game_map, room, x_cells, y_cells):
+    for x in range(x_cells):
+        for y in range(y_cells):
+            if game_map[y][x] == str(room):
+                return [x, y]
+
+
+def return_from_id(id, items):
+    for i in range(len(items)):
+        if items[i][0] == int(id):
+            return items[i]
+
+
 class Board:
     #  Инициализируем класс Board. В него мы передаём количество клеток по x и y, размер клетки,
     #  отступы и информацию о персонажах
@@ -30,6 +44,8 @@ class Board:
         self.cs = cell_size
         self.room_for_render = []
         self.objectmap_for_render = []
+        self.number_of_objects = []
+        self.items_map_for_current_level = [[['0'] * x_cells for _ in range(y_cells)] for _ in range(27)]
         self.screen_top = top_indent
         self.screen_left = left_indent
 
@@ -54,9 +70,9 @@ class Board:
         try:
             #  Инициализируем трёхмерный список всех комнат уровня единожды, при создании объекта
             self.rooms = [0] * value_of_rooms(current_map)
-            with open(f'map_folder\\maps/map_{current_map}.csv', encoding="utf8") as csvfile:
+            with open(f'map_folder\\maps\\map_{current_map}.csv', encoding="utf8") as csvfile:
                 self.game_map = list(csv.reader(csvfile, delimiter=';', quotechar='"'))
-                with open(f'map_folder\\levelmaps/levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile_1:
+                with open(f'map_folder\\levelmaps\\levelmap_{self.currentlevel}.csv', encoding="utf8") as csvfile_1:
                     levelmap = list(csv.reader(csvfile_1, delimiter=';', quotechar='"'))
                     self.levelmap_for_render = levelmap
                     for y in range(y_cells):
@@ -64,7 +80,8 @@ class Board:
                             current_room_number = int(self.game_map[y][x])
                             self.rooms_list[y][x] = current_room_number
                             if current_room_number != 0:
-                                with open(f'map_folder\\rooms/room_{levelmap[y][x]}.csv', encoding="utf8") as csvfile_2:
+                                with open(f'map_folder\\rooms\\room_{levelmap[y][x]}.csv',
+                                          encoding="utf8") as csvfile_2:
                                     room = list(csv.reader(csvfile_2, delimiter=';', quotechar='"'))
                                     self.rooms[current_room_number - 1] = room
 
@@ -74,7 +91,7 @@ class Board:
             self.pool_of_objectmaps = [0] * number_of_objectmaps
 
             for x in range(1, number_of_objectmaps + 1):
-                with open(f'map_folder\\objectmaps/objectmap_{x}.csv', encoding="utf8") as csvfile_3:
+                with open(f'map_folder\\objectmaps\\objectmap_{x}.csv', encoding="utf8") as csvfile_3:
                     objectmap = list(csv.reader(csvfile_3, delimiter=';', quotechar='"'))
                     self.pool_of_objectmaps[x - 1] = objectmap
 
@@ -85,10 +102,33 @@ class Board:
                     self.objectmaps_for_current_level[y][x] = choice(self.pool_of_objectmaps)
                     # Случайно выбираем карты препятствий для уровня
 
+            with open(f'map_folder\\objectnumber\\objectnumbermap_{self.currentlevel}.csv',
+                      encoding="utf8") as csvfile_4:
+                objectnumbermap = list(csv.reader(csvfile_4, delimiter=';', quotechar='"'))
+                self.number_of_objects = objectnumbermap
+
+            self.items = load_items_from_db()
+
+            for i in range(len(self.number_of_objects)):
+                item_id = int(self.number_of_objects[i][0])
+                item_number = int(self.number_of_objects[i][1])
+                for j in range(item_number):
+                    room_rnd = randint(2, value_of_rooms(self.currentlevel) - 1)
+                    flag = True
+                    while flag:
+                        room_rnd_x = randint(1, x_cells - 2)
+                        room_rnd_y = randint(1, y_cells - 2)
+                        x, y = (x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[0],
+                                x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[1])
+                        if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] != '3':
+                            if self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] == '0':
+                                self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] = str(item_id)
+                                flag = False
+
         #  Выходим, если искомого файла не существует
         except FileNotFoundError:
-            print(current_map)
-            print(self.currentlevel)
+            # print(current_map)
+            # print(self.currentlevel)
             print('Не удалось загрузить файл/ы')
             sys.exit()
 
@@ -118,12 +158,18 @@ class Board:
         self.boulder_image = load_image("boulder_image.png")
         self.forest_exit_image = load_image("forest_exit.png")
         self.prize_plate = load_image("item_slot.png")
+        self.red_cr = load_image("red_cr.png")
+        self.blue_cr = load_image("blue_cr.png")
+        self.green_cr = load_image("green_cr.png")
+        self.purple_cr = load_image("purple_cr.png")
 
     #  Функция отрисовки всей игры. Используя инициализированные списки комнат/объектов и пр.,
     #  отрисовывает игровую ситуацию.
     def game_render(self, screen, width, height):
         self.room_for_render = self.rooms[int(self.game_map[self.current_room_y][self.current_room_x]) - 1]
         self.objectmap_for_render = self.objectmaps_for_current_level[self.current_room_y][self.current_room_x]
+        self.items_for_render = self.items_map_for_current_level[int(self.game_map[self.current_room_y]
+                                                                     [self.current_room_x]) - 1]
         self.seen[self.current_room_y][self.current_room_x] = 1
         #  В зависимости от символов в картах уровня читаем их и отрисовываем на игровом экране
         for y in range(self.height_in_cells):
@@ -136,10 +182,15 @@ class Board:
                     screen.blit(self.forest_exit_image, (x * self.cs + self.left, y * self.cs + self.top))
                 if self.objectmap_for_render[y][x] == '3':
                     screen.blit(self.boulder_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if (self.items_for_render[y][x] == '50' or self.items_for_render[y][x] == '51' or
+                        self.items_for_render[y][x] == '52' or self.items_for_render[y][x] == '53'):
+                    # screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
+                    #             (x * self.cs + self.left, y * self.cs + self.top))
+                    screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
+                                (x * self.cs + self.left, y * self.cs + self.top))
                 if self.player[y][x] == '5':
                     self.mage_image = self.mage_sprite.frames[self.mage_sprite.cur_frame]
                     screen.blit(self.mage_image, (x * self.cs + self.left, y * self.cs + self.top))
-
 
         #  Блок установки шрифта для дальнейшего вывода надписей:
         text_font = pygame.font.Font('fonts\\Hombre Regular.otf', 40)
