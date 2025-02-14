@@ -29,17 +29,18 @@ def x_and_y_from_game_map(game_map, room, x_cells, y_cells):
                 return [x, y]
 
 
-def return_from_id(id, items):
+def return_from_id(id_inp, items):
     for i in range(len(items)):
-        if items[i][0] == int(id):
+        if items[i][0] == int(id_inp):
             return items[i]
 
 
 class Board:
     #  Инициализируем класс Board. В него мы передаём количество клеток по x и y, размер клетки,
     #  отступы и информацию о персонажах
-    def __init__(self, x_cells, y_cells, cell_size, top_indent, left_indent, player_data):
+    def __init__(self, x_cells, y_cells, cell_size, top_indent, left_indent, player_data, character):
         #  Передаём объекту в собственность переданные переменные
+        self.items_for_render = None
         self.player_data = player_data
         self.cs = cell_size
         self.room_for_render = []
@@ -112,15 +113,16 @@ class Board:
             for i in range(len(self.number_of_objects)):
                 item_id = int(self.number_of_objects[i][0])
                 item_number = int(self.number_of_objects[i][1])
+                item_number = 100
                 for j in range(item_number):
-                    room_rnd = randint(2, value_of_rooms(self.currentlevel) - 1)
+                    room_rnd = randint(1, value_of_rooms(self.currentlevel) - 1)
                     flag = True
                     while flag:
                         room_rnd_x = randint(1, x_cells - 2)
                         room_rnd_y = randint(1, y_cells - 2)
                         x, y = (x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[0],
                                 x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[1])
-                        if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] != '3':
+                        if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] == '2':
                             if self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] == '0':
                                 self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] = str(item_id)
                                 flag = False
@@ -153,11 +155,39 @@ class Board:
         self.grass_image = load_image("grass_image.png")
         self.border_image = load_image("border_image.png")
         #  self.mage_image = load_image("mage_texture.png")
-        self.mage_sprite = AnimatedSprite(load_image("mage_texture.png"), 4, 4, 64, 64)
+
+        self.mage_sprite = AnimatedSprite(load_image("mage_texture2.png"), 4, 4, 64, 64)
         self.mage_image = self.mage_sprite.frames[self.mage_sprite.cur_frame]
+        self.forester_sprite = AnimatedSprite(load_image("forester_texture2.png"), 4, 4, 64, 64)
+        self.forester_image = self.forester_sprite.frames[self.forester_sprite.cur_frame]
+        self.fool_sprite = AnimatedSprite(load_image("fool_texture2.png"), 4, 4, 64, 64)
+        self.fool_image = self.fool_sprite.frames[self.fool_sprite.cur_frame]
+        self.anarchist_sprite = AnimatedSprite(load_image("anarchist_texture2.png"), 4, 4, 64, 64)
+        self.anarchist_image = self.anarchist_sprite.frames[self.anarchist_sprite.cur_frame]
+
+        self.skeleton_sprite = AnimatedSprite(load_image("daemon_texture.png"), 8, 1, 64, 64)
+        self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
+
+        if character == 'Маг':
+            self.player_sprite = self.mage_sprite
+            self.player_image = self.mage_image
+        if character == 'Лесник':
+            self.player_sprite = self.forester_sprite
+            self.player_image = self.forester_image
+        if character == 'Шут':
+            self.player_sprite = self.fool_sprite
+            self.player_image = self.fool_image
+        if character == 'Анархист':
+            self.player_sprite = self.anarchist_sprite
+            self.player_image = self.anarchist_image
+
         self.boulder_image = load_image("boulder_image.png")
-        self.forest_exit_image = load_image("forest_exit.png")
-        self.prize_plate = load_image("item_slot.png")
+
+        self.forest_exit_up_image = load_image("forest_exit_up.png")
+        self.forest_exit_down_image = load_image("forest_exit_down.png")
+        self.forest_exit_right_image = load_image("forest_exit_right.png")
+        self.forest_exit_left_image = load_image("forest_exit_left.png")
+
         self.red_cr = load_image("red_cr.png")
         self.blue_cr = load_image("blue_cr.png")
         self.green_cr = load_image("green_cr.png")
@@ -178,30 +208,46 @@ class Board:
                     screen.blit(self.border_image, (x * self.cs + self.left, y * self.cs + self.top))
                 if self.room_for_render[y][x] == '2':
                     screen.blit(self.grass_image, (x * self.cs + self.left, y * self.cs + self.top))
-                if self.room_for_render[y][x] == '4':
-                    screen.blit(self.forest_exit_image, (x * self.cs + self.left, y * self.cs + self.top))
+
+                if self.room_for_render[y][x] == '4' and y == 0:
+                    screen.blit(self.forest_exit_up_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.room_for_render[y][x] == '4' and y == self.height_in_cells - 1:
+                    screen.blit(self.forest_exit_down_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.room_for_render[y][x] == '4' and x == 0:
+                    screen.blit(self.forest_exit_left_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.room_for_render[y][x] == '4' and x == self.width_in_cells - 1:
+                    screen.blit(self.forest_exit_right_image, (x * self.cs + self.left, y * self.cs + self.top))
+
                 if self.objectmap_for_render[y][x] == '3':
                     screen.blit(self.boulder_image, (x * self.cs + self.left, y * self.cs + self.top))
-                if (self.items_for_render[y][x] == '50' or self.items_for_render[y][x] == '51' or
-                        self.items_for_render[y][x] == '52' or self.items_for_render[y][x] == '53'):
+                # if self.objectmap_for_render[y][x] == '3':
+                #     self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
+                #     screen.blit(self.skeleton_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.items_for_render[y][x] in [f'{j}' for j in range(50, 77)]:
                     # screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
                     #             (x * self.cs + self.left, y * self.cs + self.top))
                     screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
                                 (x * self.cs + self.left, y * self.cs + self.top))
                 if self.player[y][x] == '5':
-                    self.mage_image = self.mage_sprite.frames[self.mage_sprite.cur_frame]
-                    screen.blit(self.mage_image, (x * self.cs + self.left, y * self.cs + self.top))
+                    self.player_image = self.player_sprite.frames[self.player_sprite.cur_frame]
+                    screen.blit(self.player_image, (x * self.cs + self.left, y * self.cs + self.top))
 
         #  Блок установки шрифта для дальнейшего вывода надписей:
         text_font = pygame.font.Font('fonts\\Hombre Regular.otf', 40)
-        hp_text = text_font.render(f'Здоровье:{self.player_data[5]}', 1, (180, 0, 0))
+        hp_text = text_font.render(f'Здоровье:{self.player_data[0]}', 1, (180, 0, 0))
         screen.blit(hp_text, (self.screen_left, self.screen_top // 4))
 
-        damage_text = text_font.render(f'Урон:{self.player_data[6]}', 1, (128, 128, 128))
-        screen.blit(damage_text, (self.screen_left * 6, self.screen_top // 4))
+        damage_text = text_font.render(f'Урон:{self.player_data[1]}', 1, (128, 128, 128))
+        screen.blit(damage_text, (self.screen_left * 6 - 5, self.screen_top // 4))
 
-        energy_text = text_font.render(f'Энергия:{self.player_data[7]}', 1, (0, 77, 255))
-        screen.blit(energy_text, (self.screen_left * 10, self.screen_top // 4))
+        protection_text = text_font.render(f'Защита:{self.player_data[2]}', 1, (244, 169, 0))
+        screen.blit(protection_text, (self.screen_left * 9 + 20, self.screen_top // 4))
+
+        energy_text = text_font.render(f'Энергия:{self.player_data[3]}', 1, (0, 77, 255))
+        screen.blit(energy_text, (self.screen_left * 13 + 15, self.screen_top // 4))
+
+        luck_text = text_font.render(f'Удача:{self.player_data[4]}', 1, (0, 128, 0))
+        screen.blit(luck_text, (self.screen_left * 17 + 30, self.screen_top // 4))
 
     # Возвращает координаты персонажа в Y и в X
     def return_player_coords(self):

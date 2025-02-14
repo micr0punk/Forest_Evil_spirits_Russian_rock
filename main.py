@@ -1,16 +1,31 @@
+import sys
+
 import pygame
 import board_file
-from characters import Mage
+from characters import Mage, Forester, Fool, Anarchist
+from database_file import load_character_from_db
 from load_image_file import load_image
 
+FPS = 20
 
-def main():
+#  Задаём разрешение игры в пикселях
+size = width_in_pixels, height_in_pixels = 1820, 980
+
+#  Задаём экран, с которым будем работать
+screen = pygame.display.set_mode(size)
+
+clock = pygame.time.Clock()
+
+
+def main(index, characters):
     #  Инициализируем pygame
     pygame.init()
     #  Задаём константу, говорящую нам о работе игрового цикла
     running = True
     #  По умолчанию карту мы выводить не будем, поэтому render_map – False
     render_map = False
+
+    #  characters = ['Маг', 'Лесник', 'Шут', 'Анархист']
 
     #  Инициализируем количество ячеек
     x_cells = 27  # по x
@@ -21,20 +36,24 @@ def main():
     #  Указываем размер ячейки
     cell_size = 64  # в пикселях.
 
-    #  Задаём разрешение игры в пикселях
-    size = width_in_pixels, height_in_pixels = 1820, 980
+    player_data = []
 
-    #  Задаём экран, с которым будем работать
-    screen = pygame.display.set_mode(size)
-
-    clock = pygame.time.Clock()
-
-    #  Создаём объект персонажа (Маг)
-    player = Mage([1, 'Маг', 1, 13, 6, 100, 4, 10])
-    player_data = player.data
+    if characters[index] == 'Маг':
+        #  Создаём объект персонажа (Маг)
+        player = Mage(load_character_from_db(31))
+        player_data = player.return_data()
+    if characters[index] == 'Лесник':
+        player = Forester(load_character_from_db(32))
+        player_data = player.return_data()
+    if characters[index] == 'Шут':
+        player = Fool(load_character_from_db(33))
+        player_data = player.return_data()
+    if characters[index] == 'Анархист':
+        player = Anarchist(load_character_from_db(34))
+        player_data = player.return_data()
 
     #  Создаём объект игрового поля
-    board = board_file.Board(x_cells, y_cells, cell_size, top_indent, left_indent, player_data)
+    board = board_file.Board(x_cells, y_cells, cell_size, top_indent, left_indent, player_data, characters[index])
     #  Игрок может задавать свои параметры поля
     board.set_view(left_indent, top_indent, cell_size)
 
@@ -70,11 +89,11 @@ def main():
                 #  При нажатии стрелки вверх, меняем анимацию персонажу, меняем координату персонажу на игровом поле
                 if event.key == pygame.K_UP:
                     #  Если текущий спрайт не входит в множество нужных, устанавливаем нужный
-                    if board.mage_sprite.cur_frame < 4 or board.mage_sprite.cur_frame > 6:
-                        board.mage_sprite.cur_frame = 4
+                    if board.player_sprite.cur_frame < 4 or board.player_sprite.cur_frame > 6:
+                        board.player_sprite.cur_frame = 4
                     #  Далее уже поэтапно увеличиваем фрейм анимации, пока он снова не выйдет за допустимые пределы
                     else:
-                        board.mage_sprite.cur_frame += 1
+                        board.player_sprite.cur_frame += 1
 
                     #  Функцией класса Board находим y и x персонажа на поле
                     y, x = board.return_player_coords()
@@ -105,10 +124,10 @@ def main():
                 # При перемещении вниз и вправо нам уже нет необходимости рассматривать дополнительные случаи
                 # Далее по аналогии с перемещением по стрелочке вверх
                 if event.key == pygame.K_DOWN:
-                    if board.mage_sprite.cur_frame > 2:
-                        board.mage_sprite.cur_frame = 0
+                    if board.player_sprite.cur_frame > 2:
+                        board.player_sprite.cur_frame = 0
                     else:
-                        board.mage_sprite.cur_frame += 1
+                        board.player_sprite.cur_frame += 1
 
                     y, x = board.return_player_coords()
                     try:
@@ -124,10 +143,10 @@ def main():
                         board.current_room_y += 1
 
                 if event.key == pygame.K_RIGHT:
-                    if board.mage_sprite.cur_frame < 12 or board.mage_sprite.cur_frame > 14:
-                        board.mage_sprite.cur_frame = 12
+                    if board.player_sprite.cur_frame < 12 or board.player_sprite.cur_frame > 14:
+                        board.player_sprite.cur_frame = 12
                     else:
-                        board.mage_sprite.cur_frame += 1
+                        board.player_sprite.cur_frame += 1
 
                     y, x = board.return_player_coords()
                     try:
@@ -141,10 +160,10 @@ def main():
                         board.current_room_x += 1
 
                 if event.key == pygame.K_LEFT:
-                    if board.mage_sprite.cur_frame < 8 or board.mage_sprite.cur_frame > 10:
-                        board.mage_sprite.cur_frame = 8
+                    if board.player_sprite.cur_frame < 8 or board.player_sprite.cur_frame > 10:
+                        board.player_sprite.cur_frame = 8
                     else:
-                        board.mage_sprite.cur_frame += 1
+                        board.player_sprite.cur_frame += 1
 
                     y, x = board.return_player_coords()
                     try:
@@ -218,11 +237,74 @@ def main():
             screen.blit(animation_image, (0, 0))
             pygame.display.flip()
 
-        clock.tick(60)
+        if board.skeleton_sprite.cur_frame < 3:
+            board.skeleton_sprite.cur_frame += 1
+        else:
+            board.skeleton_sprite.cur_frame = 0
+
+        clock.tick(FPS)
 
         #  Обновляем кадр в целом
         pygame.display.flip()
 
 
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+pygame.init()
+
+pygame.mixer.music.load('audio/ProklyatiyStariyDom1.mp3')
+pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.play(-1)
+
+def start_screen(index):
+    pygame.init()
+
+    #  characters = ['Маг', 'Лесник', 'Шут', 'Анархист']
+    characters = ['Шут', 'Анархист', 'Лесник', 'Маг']
+    intro_text = ["Лес. Нечисть. Русский рок.",
+                  "",
+                  "",
+                  "",
+                  f"Текущий персонаж: {characters[index]}",
+                  "Для смены персонажа нажмите SPACE",
+                  "Чтобы начать игру нажмите ENTER"]
+
+    fon = pygame.transform.scale(load_image('background1.png'), size)
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 60)
+    text_coord = 200
+    first_letter = True
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('WHITE'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        if first_letter:
+            intro_rect.x = 650
+            first_letter = False
+        else:
+            intro_rect.x = 550
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return main(index, characters)
+                    #  pygame.mixer.music.stop()
+                if event.key == pygame.K_SPACE:
+                    if index <= 2:
+                        return start_screen(index + 1)
+                    else:
+                        return start_screen(index - 3)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 if __name__ == '__main__':
-    main()
+    start_screen(0)
