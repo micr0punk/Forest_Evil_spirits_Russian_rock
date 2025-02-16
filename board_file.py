@@ -5,7 +5,19 @@ from random import choice, randint
 from pathlib import Path
 from load_image_file import load_image
 from animated_sprite import AnimatedSprite
-from database_file import load_items_from_db
+from database_file import load_items_from_db, load_enemies_from_db, load_allies_from_db
+
+
+# def write_csv(arr_save, name_csv):
+#     csv.register_dialect('myDialect',
+#     delimiter = '|',
+#     quoting=csv.QUOTE_NONE,
+#     skipinitialspace=True)
+#     with open('debug\\' + name_csv + '.csv', 'w') as f:
+#         writer = csv.writer(f, dialect='myDialect')
+#         for row in arr_save:
+#            writer.writerow(row)
+#     f.close()
 
 
 #  Создаём функцию, которая вычисляет количество номерных карт уровней
@@ -46,9 +58,35 @@ class Board:
         self.room_for_render = []
         self.objectmap_for_render = []
         self.number_of_objects = []
-        self.items_map_for_current_level = [[['0'] * x_cells for _ in range(y_cells)] for _ in range(27)]
+        # self.items_map_for_current_level = [[['0'] * x_cells for _ in range(y_cells)] for _ in range(27)]
+        self.objectmaps_for_current_level = [[0] * x_cells for _ in range(y_cells)]
+        self.items_map_for_current_level = [[0] * x_cells for _ in range(y_cells)]
         self.screen_top = top_indent
         self.screen_left = left_indent
+
+        self.character_inventory = {'70': [],
+                                    '71': [],
+                                    '72': [],
+                                    '73': [],
+                                    '74': [],
+                                    '75': [],
+                                    '76': [],
+                                    }
+
+        self.enemies_from_db = load_enemies_from_db()
+        self.enemies = {'40': [],
+                        '41': [],
+                        '42': [],
+                        '43': [],
+                        '44': [],
+                        }
+
+        self.allies_from_db = load_allies_from_db(character)
+        self.allies = {'31': [],
+                       '32': [],
+                       '33': [],
+                       '34': []
+                       }
 
         #  Задаём пул номерных карт и текущую карту
         maps_folder = Path('map_folder\\maps')
@@ -96,11 +134,10 @@ class Board:
                     objectmap = list(csv.reader(csvfile_3, delimiter=';', quotechar='"'))
                     self.pool_of_objectmaps[x - 1] = objectmap
 
-            self.objectmaps_for_current_level = [[0] * x_cells for _ in range(y_cells)]
-
             for y in range(y_cells):
                 for x in range(x_cells):
                     self.objectmaps_for_current_level[y][x] = choice(self.pool_of_objectmaps)
+                    self.items_map_for_current_level[y][x] = [['0'] * x_cells for _ in range(y_cells)]
                     # Случайно выбираем карты препятствий для уровня
 
             with open(f'map_folder\\objectnumber\\objectnumbermap_{self.currentlevel}.csv',
@@ -110,21 +147,78 @@ class Board:
 
             self.items = load_items_from_db()
 
+            count_allies = 0
             for i in range(len(self.number_of_objects)):
                 item_id = int(self.number_of_objects[i][0])
                 item_number = int(self.number_of_objects[i][1])
-                item_number = 100
+                #  item_number = 100
                 for j in range(item_number):
-                    room_rnd = randint(1, value_of_rooms(self.currentlevel) - 1)
+                    room_rnd = randint(2, value_of_rooms(self.currentlevel) - 1)
                     flag = True
+                    x_and_y_from_game_map_current = x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)
+                    x, y = (x_and_y_from_game_map_current[0],
+                            x_and_y_from_game_map_current[1])
                     while flag:
-                        room_rnd_x = randint(1, x_cells - 2)
-                        room_rnd_y = randint(1, y_cells - 2)
-                        x, y = (x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[0],
-                                x_and_y_from_game_map(self.game_map, room_rnd, x_cells, y_cells)[1])
+                        room_rnd_x = randint(2, x_cells - 3)
+                        room_rnd_y = randint(3, y_cells - 3)
                         if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] == '2':
-                            if self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] == '0':
-                                self.items_map_for_current_level[room_rnd][room_rnd_y][room_rnd_x] = str(item_id)
+                            if self.items_map_for_current_level[y][x][room_rnd_y][room_rnd_x] == '0':
+                                if str(item_id) in [f'{h}' for h in range(50, 77)]:
+                                    self.items_map_for_current_level[y][x][room_rnd_y][room_rnd_x] = str(item_id)
+
+                                if str(item_id) in [f'{h}' for h in range(40, 45)]:
+                                    self.enemies[str(item_id)].append([randint(self.enemies_from_db[str(item_id)][3],
+                                                                               self.enemies_from_db[str(item_id)][4]),
+                                                                       randint(self.enemies_from_db[str(item_id)][5],
+                                                                               self.enemies_from_db[str(item_id)][6]),
+                                                                       randint(self.enemies_from_db[str(item_id)][7],
+                                                                               self.enemies_from_db[str(item_id)][8]),
+                                                                       y, x, room_rnd_y, room_rnd_x])
+                                    self.items_map_for_current_level[y][x][room_rnd_y][room_rnd_x] = str(item_id)
+
+                                    if count_allies < 3:
+                                        for id_allies in range(31, 35):
+                                            if id_allies == self.player_data[5] or len(
+                                                self.allies[str(id_allies)]) != 0: continue
+                                            add_allies = False
+                                            flag2 = True
+                                            while flag2:
+                                                room_rnd2_x = randint(2, x_cells - 3)
+                                                room_rnd2_y = randint(3, y_cells - 3)
+                                                if self.objectmaps_for_current_level[y][x][room_rnd2_y][
+                                                    room_rnd2_x] == '2':
+                                                    if self.items_map_for_current_level[y][x][room_rnd2_y][
+                                                        room_rnd2_x] == '0':
+                                                        self.allies[str(id_allies)].append(
+                                                            [randint(self.allies_from_db[str(id_allies)][3],
+                                                                     self.allies_from_db[str(id_allies)][4]),
+                                                             randint(self.allies_from_db[str(id_allies)][5],
+                                                                     self.allies_from_db[str(id_allies)][6]),
+                                                             randint(self.allies_from_db[str(id_allies)][7],
+                                                                     self.allies_from_db[str(id_allies)][8]),
+                                                             # 6, 13, room_rnd_y, room_rnd_x])
+                                                             y, x, room_rnd2_y, room_rnd2_x])
+                                                        self.items_map_for_current_level[y][x][room_rnd2_y][
+                                                            room_rnd2_x] = str(id_allies)
+                                                        count_allies += 1
+                                                        add_allies = True
+                                                        flag2 = False
+                                            if add_allies: break
+                                # if str(item_id) in [f'{n}' for n in range(31, 35)]:
+                                #     find_enemies_in_room = False
+                                #     for yy in range(y_cells):
+                                #         for xx in range(x_cells):
+                                #             if items_map_for_current_level[y][x][room_rnd_y][room_rnd_x]
+                                #     if self.allies_from_db[str(item_id)] is not None:
+                                #         self.allies[str(item_id)].append([randint(self.allies_from_db[str(item_id)][3],
+                                #                                                   self.allies_from_db[str(item_id)][4]),
+                                #                                           randint(self.allies_from_db[str(item_id)][5],
+                                #                                                   self.allies_from_db[str(item_id)][6]),
+                                #                                           randint(self.allies_from_db[str(item_id)][7],
+                                #                                                   self.allies_from_db[str(item_id)][8]),
+                                #                                           6, 13, room_rnd_y, room_rnd_x])
+                                #                                           #y, x, room_rnd_y, room_rnd_x])
+
                                 flag = False
 
         #  Выходим, если искомого файла не существует
@@ -165,8 +259,12 @@ class Board:
         self.anarchist_sprite = AnimatedSprite(load_image("anarchist_texture2.png"), 4, 4, 64, 64)
         self.anarchist_image = self.anarchist_sprite.frames[self.anarchist_sprite.cur_frame]
 
-        self.skeleton_sprite = AnimatedSprite(load_image("daemon_texture.png"), 8, 1, 64, 64)
+        self.skeleton_sprite = AnimatedSprite(load_image("skeleton.png"), 8, 1, 64, 64)
         self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
+        self.daemon_sprite = AnimatedSprite(load_image("daemon.png"), 8, 1, 64, 64)
+        self.daemon_image = self.daemon_sprite.frames[self.daemon_sprite.cur_frame]
+        self.frogger_sprite = AnimatedSprite(load_image("frogger.png"), 4, 1, 128, 128)
+        self.frogger_image = self.frogger_sprite.frames[self.frogger_sprite.cur_frame]
 
         if character == 'Маг':
             self.player_sprite = self.mage_sprite
@@ -188,18 +286,25 @@ class Board:
         self.forest_exit_right_image = load_image("forest_exit_right.png")
         self.forest_exit_left_image = load_image("forest_exit_left.png")
 
-        self.red_cr = load_image("red_cr.png")
-        self.blue_cr = load_image("blue_cr.png")
-        self.green_cr = load_image("green_cr.png")
-        self.purple_cr = load_image("purple_cr.png")
+        self.items_images = {'50': load_image("red_cr.png"),
+                             '51': load_image("blue_cr.png"),
+                             '52': load_image("green_cr.png"),
+                             '53': load_image("purple_cr.png"),
+                             '70': load_image("helmet.png"),
+                             '71': load_image("sword.png"),
+                             '72': load_image("bow.png"),
+                             '73': load_image("armor.png"),
+                             '74': load_image("knife.png"),
+                             '75': load_image("shield.png"),
+                             '76': load_image("magic_staff.png"),
+                             }
 
     #  Функция отрисовки всей игры. Используя инициализированные списки комнат/объектов и пр.,
     #  отрисовывает игровую ситуацию.
-    def game_render(self, screen, width, height):
+    def game_render(self, screen):
         self.room_for_render = self.rooms[int(self.game_map[self.current_room_y][self.current_room_x]) - 1]
         self.objectmap_for_render = self.objectmaps_for_current_level[self.current_room_y][self.current_room_x]
-        self.items_for_render = self.items_map_for_current_level[int(self.game_map[self.current_room_y]
-                                                                     [self.current_room_x]) - 1]
+        self.items_for_render = self.items_map_for_current_level[self.current_room_y][self.current_room_x]
         self.seen[self.current_room_y][self.current_room_x] = 1
         #  В зависимости от символов в картах уровня читаем их и отрисовываем на игровом экране
         for y in range(self.height_in_cells):
@@ -223,11 +328,29 @@ class Board:
                 # if self.objectmap_for_render[y][x] == '3':
                 #     self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
                 #     screen.blit(self.skeleton_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.items_for_render[y][x] == '40':
+                    self.daemon_image = self.daemon_sprite.frames[self.daemon_sprite.cur_frame]
+                    screen.blit(self.daemon_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.items_for_render[y][x] == '43':
+                    self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
+                    screen.blit(self.skeleton_image, (x * self.cs + self.left, y * self.cs + self.top))
                 if self.items_for_render[y][x] in [f'{j}' for j in range(50, 77)]:
                     # screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
                     #             (x * self.cs + self.left, y * self.cs + self.top))
-                    screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
+                    # screen.blit(load_image(f'{return_from_id(self.items_for_render[y][x], self.items)[2]}.png'),
+                    #             (x * self.cs + self.left, y * self.cs + self.top))
+                    screen.blit(self.items_images[self.items_for_render[y][x]],
                                 (x * self.cs + self.left, y * self.cs + self.top))
+                if self.items_for_render[y][x] in [f'{j}' for j in range(31, 35)]:
+                    if self.allies[self.items_for_render[y][x]]:
+                        if self.items_for_render[y][x] == '31':
+                            screen.blit(self.mage_image, (x * self.cs + self.left, y * self.cs + self.top))
+                        if self.items_for_render[y][x] == '32':
+                            screen.blit(self.forester_image, (x * self.cs + self.left, y * self.cs + self.top))
+                        if self.items_for_render[y][x] == '33':
+                            screen.blit(self.fool_image, (x * self.cs + self.left, y * self.cs + self.top))
+                        if self.items_for_render[y][x] == '34':
+                            screen.blit(self.anarchist_image, (x * self.cs + self.left, y * self.cs + self.top))
                 if self.player[y][x] == '5':
                     self.player_image = self.player_sprite.frames[self.player_sprite.cur_frame]
                     screen.blit(self.player_image, (x * self.cs + self.left, y * self.cs + self.top))
@@ -309,6 +432,38 @@ class Board:
                     cs1 = self.cs // 2
                     pygame.draw.rect(screen, pygame.Color('black'),
                                      (x * self.cs + self.left + cs1 // 2, y * self.cs + self.top + cs1 // 2, cs1, cs1))
+
+    def inventory_render(self, screen):
+        #  Отрисовка карты игры. Сначала заливает весь экран бледно-зелёным
+        screen.fill((0, 0, 0))
+
+        intro_text = ["ИНВЕНТАРЬ:",
+                      "",
+                      f"ШЛЕМ                КОЛ-ВО: {len(self.character_inventory['70'])}",
+                      f"МЕЧ                 КОЛ-ВО: {len(self.character_inventory['71'])}",
+                      f"ЛУК                 КОЛ-ВО: {len(self.character_inventory['72'])}",
+                      f"ДОСПЕХИ             КОЛ-ВО: {len(self.character_inventory['73'])}",
+                      f"НОЖ                 КОЛ-ВО: {len(self.character_inventory['74'])}",
+                      f"ЩИТ                 КОЛ-ВО: {len(self.character_inventory['75'])}",
+                      f"ВОЛШЕБНЫЙ ПОСОХ     КОЛ-ВО: {len(self.character_inventory['76'])}",
+                      "",
+                      "Чтобы выйти из инвентаря нажмите I"]
+
+        font = pygame.font.Font('fonts\\Hombre Regular.otf', 60)
+        text_coord = 25
+        first_letter = True
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('WHITE'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            if first_letter:
+                intro_rect.x = 750
+                first_letter = False
+            else:
+                intro_rect.x = 550
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
 
     # Работает в паре с get_cell
     def get_click(self, mouse_pos):
