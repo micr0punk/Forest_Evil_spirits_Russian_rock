@@ -1,11 +1,13 @@
-import pygame
-import sys
 import csv
-from random import choice, randint
+import sys
 from pathlib import Path
-from load_image_file import load_image
+from random import choice, randint
+
+import pygame
+
 from animated_sprite import AnimatedSprite
 from database_file import load_items_from_db, load_enemies_from_db, load_allies_from_db
+from load_image_file import load_image
 
 
 # def write_csv(arr_save, name_csv):
@@ -179,7 +181,7 @@ class Board:
                                     if count_allies < 3:
                                         for id_allies in range(31, 35):
                                             if id_allies == self.player_data[5] or len(
-                                                self.allies[str(id_allies)]) != 0: continue
+                                                    self.allies[str(id_allies)]) != 0: continue
                                             add_allies = False
                                             flag2 = True
                                             while flag2:
@@ -196,7 +198,6 @@ class Board:
                                                                      self.allies_from_db[str(id_allies)][6]),
                                                              randint(self.allies_from_db[str(id_allies)][7],
                                                                      self.allies_from_db[str(id_allies)][8]),
-                                                             # 6, 13, room_rnd_y, room_rnd_x])
                                                              y, x, room_rnd2_y, room_rnd2_x])
                                                         self.items_map_for_current_level[y][x][room_rnd2_y][
                                                             room_rnd2_x] = str(id_allies)
@@ -217,7 +218,7 @@ class Board:
                                 #                                           randint(self.allies_from_db[str(item_id)][7],
                                 #                                                   self.allies_from_db[str(item_id)][8]),
                                 #                                           6, 13, room_rnd_y, room_rnd_x])
-                                #                                           #y, x, room_rnd_y, room_rnd_x])
+                                #                                           y, x, room_rnd_y, room_rnd_x)
 
                                 flag = False
 

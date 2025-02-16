@@ -2,6 +2,7 @@ import sys
 from random import randint
 
 import pygame
+
 import board_file
 from characters import Mage, Forester, Fool, Anarchist
 from database_file import load_character_from_db
@@ -16,6 +17,216 @@ size = width_in_pixels, height_in_pixels = 1820, 980
 screen = pygame.display.set_mode(size)
 
 clock = pygame.time.Clock()
+
+
+def game_over():
+    pygame.init()
+
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 120)
+    string_rendered = font.render('ИГРА ОКОНЧЕНА!', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (1920 // 4 - 15, 1080 // 4 + 30))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 60)
+    string_rendered = font.render('Для выхода, нажмите SPACE', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (580, 720))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    sys.exit()
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, character_mas, enemy_name, enemy_mas,
+                  is_there_item=False, item_name=None, item=None,
+                  is_there_allie=False, allie=None):
+    pygame.init()
+
+    global victory
+    victory = False
+
+    who_is_first_bool = randint(0, 1)
+    who_is_first_bool_is_showed = False
+
+    used_item = False
+    battle_in_progress = False
+
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 120)
+    string_rendered = font.render('ВАС АТАКОВАЛИ!', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (1920 // 4 + 15, 1080 // 4 + 30))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 60)
+    string_rendered = font.render('Для продолжения, нажмите SPACE', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (530, 720))
+
+    def used_item_func():
+        screen.fill((0, 0, 0))
+        string_renderedd = font.render(f'ВЫ ИСПОЛЬЗОВАЛИ  {item_name.upper()}', 1, pygame.Color('WHITE'))
+        screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+        return
+
+    def attacked_func():
+        screen.fill((0, 0, 0))
+        string_renderedd = font.render(f'ВЫ АТАКОВАЛИ  {enemy_name.upper()}', 1, pygame.Color('WHITE'))
+        screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+        return
+
+    def being_attacked_func():
+        screen.fill((0, 0, 0))
+        string_renderedd = font.render(f'{enemy_name.upper()} АТАКОВАЛ ВАС', 1, pygame.Color('WHITE'))
+        screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+        return
+
+    def who_is_first(who):
+        screen.fill((0, 0, 0))
+        if who:
+            string_renderedd = font.render(f'{character_name.upper()} НАЧИНАЕТ ПЕРВЫЙ', 1, pygame.Color('WHITE'))
+            screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+            return
+        else:
+            string_renderedd = font.render(f'{enemy_name.upper()} НАЧИНАЕТ ПЕРВЫЙ', 1, pygame.Color('WHITE'))
+            screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+            return
+
+    def battle(font_from_init, allie_state, allie_name, item_state, item_name_str, item_mas):
+        screen.fill((0, 0, 0))
+        pygame.draw.rect(screen, pygame.Color('WHITE'),
+                         (0, 628, 1820, 350), 1)
+        pygame.draw.rect(screen, pygame.Color('WHITE'),
+                         (0, 0, 1820 // 2, 628), 1)
+        pygame.draw.rect(screen, pygame.Color('WHITE'),
+                         (1820 // 2, 0, 1820 // 2, 628), 1)
+
+        character_text = [f"{character_name.upper()}",
+                          "",
+                          f"ЗДОРОВЬЕ: {character_mas[0]}",
+                          f"УРОН: {character_mas[1]}",
+                          f"ЗАЩИТА: {character_mas[2]}",
+                          f"ЭНЕРГИЯ: {character_mas[3]}",
+                          f"УДАЧА: {character_mas[4]}"
+
+                          ]
+
+        enemy_text = [f"{enemy_name.upper()}",
+                      "",
+                      f"ЗДОРОВЬЕ: {enemy_mas[0]}",
+                      f"УРОН: {enemy_mas[1]}",
+                      f"ЗАЩИТА: {enemy_mas[2]}",
+
+                      ]
+
+        text_coord = 10
+        for line in character_text:
+            string_rendered_print = font_from_init.render(line, 1, pygame.Color('WHITE'))
+            intro_rect = string_rendered_print.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 70
+            text_coord += intro_rect.height
+            screen.blit(string_rendered_print, intro_rect)
+
+        text_coord = 5
+        for line in enemy_text:
+            string_rendered_print = font_from_init.render(line, 1, pygame.Color('WHITE'))
+            intro_rect = string_rendered_print.get_rect()
+            text_coord += 10
+            intro_rect.top = text_coord
+            intro_rect.x = 970
+            text_coord += intro_rect.height
+            screen.blit(string_rendered_print, intro_rect)
+
+        attack_string = font.render('A - атаковать', 1, pygame.Color('WHITE'))
+        screen.blit(attack_string, (70, 780))
+        if item_state:
+            using_string = font.render(f'Текущий предмет: {item_name_str}', 1, pygame.Color('WHITE'))
+            screen.blit(using_string, (570, 640))
+            using_string = font.render(f'U - использовать предмет', 1, pygame.Color('WHITE'))
+            screen.blit(using_string, (570, 730))
+
+        who_helping_string = font.render('Вам помогает:', 1, pygame.Color('WHITE'))
+        screen.blit(who_helping_string, (1370, 640))
+        if allie_state:
+            who_helping_allie_string = font.render(f'{allie_name.upper()}', 1, pygame.Color('WHITE'))
+            screen.blit(who_helping_allie_string, (1370, 730))
+        else:
+            who_helping_allie_string = font.render(f'Никто :)', 1, pygame.Color('WHITE'))
+            screen.blit(who_helping_allie_string, (1370, 730))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    if not battle_in_progress:
+                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                        battle_in_progress = True
+                if event.key == pygame.K_u:
+                    if battle_in_progress:
+                        if is_there_item:
+                            if not used_item:
+                                for i in range(len(item)):
+                                    character_mas[i] += item[i]
+                                used_item_func()
+                                a = 0
+                                while a != 6000:
+                                    pygame.display.flip()
+                                    clock.tick(FPS)
+                                    a += 60
+                                a = 0
+                                battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                                used_item = True
+
+                if event.key == pygame.K_a:
+                    if who_is_first_bool:
+                        enemy_mas[0] -= character_mas[1]
+                        who_is_first_bool = 0
+                        attacked_func()
+                        c = 0
+                        while c != 6000:
+                            pygame.display.flip()
+                            clock.tick(FPS)
+                            c += 60
+                        c = 0
+                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                    else:
+                        character_mas[0] -= enemy_mas[1]
+                        who_is_first_bool = 1
+                        being_attacked_func()
+                        d = 0
+                        while d != 6000:
+                            pygame.display.flip()
+                            clock.tick(FPS)
+                            d += 60
+                        d = 0
+                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                    if character_mas[0] <= 0:
+                        game_over()
+                    if enemy_mas[0] <= 0:
+                        itemmap[map_y][map_x][room_y][room_x] = '0'
+                        victory = True
+                        return itemmap, True
+
+        if battle_in_progress and not who_is_first_bool_is_showed:
+            who_is_first(who_is_first_bool)
+            b = 0
+            while b != 6000:
+                pygame.display.flip()
+                clock.tick(FPS)
+                b += 60
+            b = 0
+            battle(font, is_there_allie, allie, is_there_item, item_name, item)
+            who_is_first_bool_is_showed = True
+
+        if victory:
+            return itemmap, True
+
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
 def dialog(mas, name, is_this_a_collectible=False):
@@ -119,7 +330,7 @@ def enemies_moves(dictik, objectmap, itemmap, player, player_coord, current_room
                                     and player[coord_y - 1][coord_x] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -138,7 +349,7 @@ def enemies_moves(dictik, objectmap, itemmap, player, player_coord, current_room
                                     and player[coord_y][coord_x + 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -160,7 +371,7 @@ def enemies_moves(dictik, objectmap, itemmap, player, player_coord, current_room
                                     and player[coord_y + 1][coord_x] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -179,7 +390,7 @@ def enemies_moves(dictik, objectmap, itemmap, player, player_coord, current_room
                                     and player[coord_y][coord_x - 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -226,7 +437,7 @@ def allies_moves(dictik, objectmap, itemmap, player, current_room_y, current_roo
                                     and player[coord_y][coord_x - 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -255,7 +466,7 @@ def allies_moves(dictik, objectmap, itemmap, player, current_room_y, current_roo
                                     and player[coord_y][coord_x - 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -286,7 +497,7 @@ def allies_moves(dictik, objectmap, itemmap, player, current_room_y, current_roo
                                     and player[coord_y][coord_x - 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -314,7 +525,7 @@ def allies_moves(dictik, objectmap, itemmap, player, current_room_y, current_roo
                                     and player[coord_y][coord_x - 1] == '5'
                             ):
                                 # битва с врагом
-                                # print('мохачь')
+                                # print('битва')
                                 battle_enemies = True
                                 flag = False
                                 continue
@@ -436,7 +647,9 @@ def main(index, characters):
                     try:
                         #  Смотрим, не пытается ли персонаж переместиться в клетку с препятствием.
                         #  Если нет – меняем координату персонажа
-                        # if board.objectmap_for_render[y - 1][x] == '2' and board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][x] == '0' and board.room_for_render[y - 1][x] != '1':
+                        # if board.objectmap_for_render[y - 1][x] == '2' and
+                        # board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][x] == '0'
+                        # and board.room_for_render[y - 1][x] != '1':
                         if board.objectmap_for_render[y - 1][x] != '3' and (
                                 board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
                                     x] == '0' or
@@ -462,6 +675,143 @@ def main(index, characters):
                     except IndexError:
                         pass
 
+                    if battle_enemies:
+                        if (((board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                  x] in [
+                                  f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                  x] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x + 1] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x - 1] in [f'{b}' for b in range(40, 44)])) > 1):
+                            game_over()
+                        for key in board.enemies:
+                            for enemy in board.enemies[key]:
+                                if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y - 1 and enemy[-1] == x):
+                                    enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
+                                    for key1 in board.allies:
+                                        for allie in board.allies[key1]:
+                                            if allie[-4] == board.current_room_y and allie[-3] == board.current_room_x:
+                                                is_there_items = False
+                                                for key2 in board.character_inventory:
+                                                    for type_of_item in board.character_inventory[key2]:
+                                                        if len(type_of_item) != 0:
+                                                            is_there_items = True
+                                                if is_there_items:
+                                                    flag = True
+                                                    while flag:
+                                                        keyy = randint(70, 76)
+                                                        if len(board.character_inventory[f'{keyy}']) != 0:
+                                                            indexxx = randint(0,
+                                                                              len(board.character_inventory[
+                                                                                      f'{keyy}']) - 1)
+                                                            if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                                item = board.character_inventory[f'{keyy}'][indexxx][
+                                                                    randint(0, len(
+                                                                        board.character_inventory[f'{keyy}'][
+                                                                            indexxx]) - 1)]
+                                                                item = board.character_inventory[f'{keyy}'][indexxx]
+                                                                flag = False
+                                                            else:
+                                                                continue
+                                                        else:
+                                                            continue
+                                                    item_name_str = board.items[f'{keyy}'][1]
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_item=is_there_items,
+                                                        item_name=item_name_str,
+                                                        item=item, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                                else:
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                    is_there_items = False
+                                    for key2 in board.character_inventory:
+                                        for type_of_item in board.character_inventory[key2]:
+                                            if len(type_of_item) != 0:
+                                                is_there_items = True
+                                    if is_there_items:
+                                        flag = True
+                                        while flag:
+                                            keyy = randint(70, 76)
+                                            if len(board.character_inventory[f'{keyy}']) != 0:
+                                                indexxx = randint(0,
+                                                                  len(board.character_inventory[f'{keyy}']) - 1)
+                                                if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                    item = board.character_inventory[f'{keyy}'][indexxx][
+                                                        randint(0, len(
+                                                            board.character_inventory[f'{keyy}'][
+                                                                indexxx]) - 1)]
+                                                    item = board.character_inventory[f'{keyy}'][indexxx]
+                                                    flag = False
+                                                else:
+                                                    continue
+                                            else:
+                                                continue
+                                        item_name_str = board.items[f'{keyy}'][1]
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y - 1,
+                                            x,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data,
+                                            is_there_item=is_there_items,
+                                            item_name=item_name_str,
+                                            item=item)
+                                    else:
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y - 1,
+                                            x,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data)
+                        if is_defeated:
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y + 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y - 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x + 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x + 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x - 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x - 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+
                 # При перемещении вниз и вправо нам уже нет необходимости рассматривать дополнительные случаи
                 # Далее по аналогии с перемещением по стрелочке вверх
                 if event.key == pygame.K_DOWN:
@@ -485,7 +835,9 @@ def main(index, characters):
 
                     y, x = board.return_player_coords()
                     try:
-                        # if board.objectmap_for_render[y + 1][x] == '2' and board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][x] == '0' and board.room_for_render[y + 1][x] != '1':
+                        # if board.objectmap_for_render[y + 1][x] == '2' and
+                        # board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][x]
+                        # == '0' and board.room_for_render[y + 1][x] != '1':
                         if board.objectmap_for_render[y + 1][x] != '3' and (
                                 board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
                                     x] == '0' or
@@ -500,6 +852,143 @@ def main(index, characters):
                         board.player[y][x] = '0'
                         board.player[0][x] = '5'
                         board.current_room_y += 1
+
+                    if battle_enemies:
+                        if (((board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                  x] in [
+                                  f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                  x] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x + 1] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x - 1] in [f'{b}' for b in range(40, 44)])) > 1):
+                            game_over()
+                        for key in board.enemies:
+                            for enemy in board.enemies[key]:
+                                if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y + 1 and enemy[-1] == x):
+                                    enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
+                                    for key1 in board.allies:
+                                        for allie in board.allies[key1]:
+                                            if allie[-4] == board.current_room_y and allie[-3] == board.current_room_x:
+                                                is_there_items = False
+                                                for key2 in board.character_inventory:
+                                                    for type_of_item in board.character_inventory[key2]:
+                                                        if len(type_of_item) != 0:
+                                                            is_there_items = True
+                                                if is_there_items:
+                                                    flag = True
+                                                    while flag:
+                                                        keyy = randint(70, 76)
+                                                        if len(board.character_inventory[f'{keyy}']) != 0:
+                                                            indexxx = randint(0,
+                                                                              len(board.character_inventory[
+                                                                                      f'{keyy}']) - 1)
+                                                            if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                                item = board.character_inventory[f'{keyy}'][indexxx][
+                                                                    randint(0, len(
+                                                                        board.character_inventory[f'{keyy}'][
+                                                                            indexxx]) - 1)]
+                                                                item = board.character_inventory[f'{keyy}'][indexxx]
+                                                                flag = False
+                                                            else:
+                                                                continue
+                                                        else:
+                                                            continue
+                                                    item_name_str = board.items[f'{keyy}'][1]
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y + 1, x,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_item=is_there_items,
+                                                        item_name=item_name_str,
+                                                        item=item, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                                else:
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y + 1, x,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                    is_there_items = False
+                                    for key2 in board.character_inventory:
+                                        for type_of_item in board.character_inventory[key2]:
+                                            if len(type_of_item) != 0:
+                                                is_there_items = True
+                                    if is_there_items:
+                                        flag = True
+                                        while flag:
+                                            keyy = randint(70, 76)
+                                            if len(board.character_inventory[f'{keyy}']) != 0:
+                                                indexxx = randint(0,
+                                                                  len(board.character_inventory[f'{keyy}']) - 1)
+                                                if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                    item = board.character_inventory[f'{keyy}'][indexxx][
+                                                        randint(0, len(
+                                                            board.character_inventory[f'{keyy}'][
+                                                                indexxx]) - 1)]
+                                                    item = board.character_inventory[f'{keyy}'][indexxx]
+                                                    flag = False
+                                                else:
+                                                    continue
+                                            else:
+                                                continue
+                                        item_name_str = board.items[f'{keyy}'][1]
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y + 1,
+                                            x,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data,
+                                            is_there_item=is_there_items,
+                                            item_name=item_name_str,
+                                            item=item)
+                                    else:
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y + 1,
+                                            x,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data)
+                        if is_defeated:
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y + 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y - 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x + 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x + 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x - 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x - 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
 
                 if event.key == pygame.K_RIGHT:
                     board.enemies, board.items_map_for_current_level, battle_enemies = enemies_moves(board.enemies,
@@ -522,7 +1011,9 @@ def main(index, characters):
 
                     y, x = board.return_player_coords()
                     try:
-                        # if board.objectmap_for_render[y][x + 1] == '2' and board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x + 1] == '0' and board.room_for_render[y][x + 1] != '1':
+                        # if board.objectmap_for_render[y][x + 1] == '2' and
+                        # board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x + 1] == '0'
+                        # and board.room_for_render[y][x + 1] != '1':
                         if board.objectmap_for_render[y][x + 1] != '3' and (
                                 board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
                                     x + 1] == '0' or
@@ -536,6 +1027,143 @@ def main(index, characters):
                         board.player[y][x] = '0'
                         board.player[y][0] = '5'
                         board.current_room_x += 1
+
+                    if battle_enemies:
+                        if (((board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                  x] in [
+                                  f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                  x] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x + 1] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x - 1] in [f'{b}' for b in range(40, 44)])) > 1):
+                            game_over()
+                        for key in board.enemies:
+                            for enemy in board.enemies[key]:
+                                if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x + 1):
+                                    enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
+                                    for key1 in board.allies:
+                                        for allie in board.allies[key1]:
+                                            if allie[-4] == board.current_room_y and allie[-3] == board.current_room_x:
+                                                is_there_items = False
+                                                for key2 in board.character_inventory:
+                                                    for type_of_item in board.character_inventory[key2]:
+                                                        if len(type_of_item) != 0:
+                                                            is_there_items = True
+                                                if is_there_items:
+                                                    flag = True
+                                                    while flag:
+                                                        keyy = randint(70, 76)
+                                                        if len(board.character_inventory[f'{keyy}']) != 0:
+                                                            indexxx = randint(0,
+                                                                              len(board.character_inventory[
+                                                                                      f'{keyy}']) - 1)
+                                                            if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                                item = board.character_inventory[f'{keyy}'][indexxx][
+                                                                    randint(0, len(
+                                                                        board.character_inventory[f'{keyy}'][
+                                                                            indexxx]) - 1)]
+                                                                item = board.character_inventory[f'{keyy}'][indexxx]
+                                                                flag = False
+                                                            else:
+                                                                continue
+                                                        else:
+                                                            continue
+                                                    item_name_str = board.items[f'{keyy}'][1]
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y, x + 1,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_item=is_there_items,
+                                                        item_name=item_name_str,
+                                                        item=item, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                                else:
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y, x + 1,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                    is_there_items = False
+                                    for key2 in board.character_inventory:
+                                        for type_of_item in board.character_inventory[key2]:
+                                            if len(type_of_item) != 0:
+                                                is_there_items = True
+                                    if is_there_items:
+                                        flag = True
+                                        while flag:
+                                            keyy = randint(70, 76)
+                                            if len(board.character_inventory[f'{keyy}']) != 0:
+                                                indexxx = randint(0,
+                                                                  len(board.character_inventory[f'{keyy}']) - 1)
+                                                if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                    item = board.character_inventory[f'{keyy}'][indexxx][
+                                                        randint(0, len(
+                                                            board.character_inventory[f'{keyy}'][
+                                                                indexxx]) - 1)]
+                                                    item = board.character_inventory[f'{keyy}'][indexxx]
+                                                    flag = False
+                                                else:
+                                                    continue
+                                            else:
+                                                continue
+                                        item_name_str = board.items[f'{keyy}'][1]
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y,
+                                            x + 1,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data,
+                                            is_there_item=is_there_items,
+                                            item_name=item_name_str,
+                                            item=item)
+                                    else:
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y,
+                                            x + 1,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data)
+                        if is_defeated:
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y + 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y - 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x + 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x + 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x - 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x - 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
 
                 if event.key == pygame.K_LEFT:
                     board.enemies, board.items_map_for_current_level, battle_enemies = enemies_moves(board.enemies,
@@ -558,7 +1186,9 @@ def main(index, characters):
 
                     y, x = board.return_player_coords()
                     try:
-                        # if board.objectmap_for_render[y][x - 1] == '2' and board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x - 1] == '0' and board.room_for_render[y][x - 1] != '1':
+                        # if board.objectmap_for_render[y][x - 1] == '2' and
+                        # board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x - 1] == '0'
+                        # and board.room_for_render[y][x - 1] != '1':
                         if board.objectmap_for_render[y][x - 1] != '3' and (
                                 board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
                                     x - 1] == '0' or
@@ -582,6 +1212,145 @@ def main(index, characters):
 
                     except IndexError:
                         pass
+
+                    if battle_enemies:
+                        if (((board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
+                                  x] in [
+                                  f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                  x] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x + 1] in [f'{b}' for b in range(40, 44)]) +
+                             (board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                  x - 1] in [f'{b}' for b in range(40, 44)])) > 1):
+                            game_over()
+                        for key in board.enemies:
+                            for enemy in board.enemies[key]:
+                                if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x - 1):
+                                    enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
+                                    for key1 in board.allies:
+                                        for allie in board.allies[key1]:
+                                            if allie[-4] == board.current_room_y and allie[-3] == board.current_room_x:
+                                                is_there_items = False
+                                                for key2 in board.character_inventory:
+                                                    for type_of_item in board.character_inventory[key2]:
+                                                        if len(type_of_item) != 0:
+                                                            is_there_items = True
+                                                if is_there_items:
+                                                    flag = True
+                                                    while flag:
+                                                        keyy = randint(70, 76)
+                                                        if len(board.character_inventory[f'{keyy}']) != 0:
+                                                            indexxx = randint(0,
+                                                                              len(board.character_inventory[
+                                                                                      f'{keyy}']) - 1)
+                                                            if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                                item = board.character_inventory[f'{keyy}'][indexxx][
+                                                                    randint(0, len(
+                                                                        board.character_inventory[f'{keyy}'][
+                                                                            indexxx]) - 1)]
+                                                                item = board.character_inventory[f'{keyy}'][indexxx]
+                                                                flag = False
+                                                            else:
+                                                                continue
+                                                        else:
+                                                            continue
+                                                    item_name_str = board.items[f'{keyy}'][1]
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y, x - 1,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_item=is_there_items,
+                                                        item_name=item_name_str,
+                                                        item=item, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                                else:
+                                                    board.items_map_for_current_level, is_defeated = battle_screen(
+                                                        board.current_room_y, board.current_room_x, y, x - 1,
+                                                        board.items_map_for_current_level, characters[index],
+                                                        board.player_data,
+                                                        board.enemies_from_db[key][1],
+                                                        enemy_mas_data, is_there_allie=True,
+                                                        allie=board.allies_from_db[key1][1])
+                                    is_there_items = False
+                                    for key2 in board.character_inventory:
+                                        for type_of_item in board.character_inventory[key2]:
+                                            if len(type_of_item) != 0:
+                                                is_there_items = True
+                                    if is_there_items:
+                                        flag = True
+                                        while flag:
+                                            keyy = randint(70, 76)
+                                            if len(board.character_inventory[f'{keyy}']) != 0:
+                                                indexxx = randint(0,
+                                                                  len(board.character_inventory[f'{keyy}']) - 1)
+                                                if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                                    item = board.character_inventory[f'{keyy}'][indexxx][
+                                                        randint(0, len(
+                                                            board.character_inventory[f'{keyy}'][
+                                                                indexxx]) - 1)]
+                                                    item = board.character_inventory[f'{keyy}'][indexxx]
+                                                    flag = False
+                                                else:
+                                                    continue
+                                            else:
+                                                continue
+                                        item_name_str = board.items[f'{keyy}'][1]
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y,
+                                            x - 1,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data,
+                                            is_there_item=is_there_items,
+                                            item_name=item_name_str,
+                                            item=item)
+                                    else:
+                                        board.items_map_for_current_level, is_defeated = battle_screen(
+                                            board.current_room_y,
+                                            board.current_room_x, y,
+                                            x - 1,
+                                            board.items_map_for_current_level,
+                                            characters[index],
+                                            board.player_data,
+                                            board.enemies_from_db[key][1],
+                                            enemy_mas_data)
+                        if is_defeated:
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y + 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
+                                x] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x and enemy[-2] == y - 1:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x + 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x + 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
+                                x - 1] in [
+                                f'{b}' for b in range(40, 44)]:
+                                for key in range(len(board.enemies)):
+                                    for enemy in range(len(board.enemies[key])):
+                                        if enemy[-1] == x - 1 and enemy[-2] == y:
+                                            board.enemies[key].pop(enemy)
+                            else:
+                                print(1)
 
         y, x = board.return_player_coords()
         item_id = board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x]
