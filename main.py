@@ -71,14 +71,14 @@ def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, charact
 
     def attacked_func():
         screen.fill((0, 0, 0))
-        string_renderedd = font.render(f'ВЫ АТАКОВАЛИ  {enemy_name.upper()}', 1, pygame.Color('WHITE'))
-        screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+        string_renderedd = font.render(f'ВЫ АТАКОВАЛИ  {enemy_name.upper()}А', 1, pygame.Color('WHITE'))
+        screen.blit(string_renderedd, (1920 // 4 + 100, 1080 // 4 + 150))
         return
 
     def being_attacked_func():
         screen.fill((0, 0, 0))
         string_renderedd = font.render(f'{enemy_name.upper()} АТАКОВАЛ ВАС', 1, pygame.Color('WHITE'))
-        screen.blit(string_renderedd, (1920 // 4 + 50, 1080 // 4 + 100))
+        screen.blit(string_renderedd, (1920 // 4 + 100, 1080 // 4 + 150))
         return
 
     def who_is_first(who):
@@ -209,7 +209,7 @@ def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, charact
                     if enemy_mas[0] <= 0:
                         itemmap[map_y][map_x][room_y][room_x] = '0'
                         victory = True
-                        return itemmap, True
+                        #  return itemmap, [True, room_y, room_x]
 
         if battle_in_progress and not who_is_first_bool_is_showed:
             who_is_first(who_is_first_bool)
@@ -223,7 +223,7 @@ def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, charact
             who_is_first_bool_is_showed = True
 
         if victory:
-            return itemmap, True
+            return itemmap, [True, room_y, room_x]
 
         pygame.display.flip()
         clock.tick(FPS)
@@ -689,7 +689,13 @@ def main(index, characters):
                         for key in board.enemies:
                             for enemy in board.enemies[key]:
                                 if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
-                                        enemy[-2] == y - 1 and enemy[-1] == x):
+                                    enemy[-2] == y - 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y + 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x - 1) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x + 1):
                                     enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
                                     for key1 in board.allies:
                                         for allie in board.allies[key1]:
@@ -782,35 +788,12 @@ def main(index, characters):
                                             board.player_data,
                                             board.enemies_from_db[key][1],
                                             enemy_mas_data)
-                        if is_defeated:
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y + 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y - 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x + 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x + 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x - 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x - 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
+                        if is_defeated[0]:
+                            for key in range(40, 44):
+                                for enemy in range(len(board.enemies[f'{key}']) - 1):
+                                    if board.enemies[f'{key}'][enemy][-1] == is_defeated[-1] and \
+                                            board.enemies[f'{key}'][enemy][-2] == is_defeated[-2]:
+                                        board.enemies[f'{key}'].pop(enemy)
 
                 # При перемещении вниз и вправо нам уже нет необходимости рассматривать дополнительные случаи
                 # Далее по аналогии с перемещением по стрелочке вверх
@@ -867,7 +850,13 @@ def main(index, characters):
                         for key in board.enemies:
                             for enemy in board.enemies[key]:
                                 if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
-                                        enemy[-2] == y + 1 and enemy[-1] == x):
+                                    enemy[-2] == y - 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y + 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x - 1) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x + 1):
                                     enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
                                     for key1 in board.allies:
                                         for allie in board.allies[key1]:
@@ -898,7 +887,7 @@ def main(index, characters):
                                                             continue
                                                     item_name_str = board.items[f'{keyy}'][1]
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y + 1, x,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -908,7 +897,7 @@ def main(index, characters):
                                                         allie=board.allies_from_db[key1][1])
                                                 else:
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y + 1, x,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -940,7 +929,7 @@ def main(index, characters):
                                         item_name_str = board.items[f'{keyy}'][1]
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y + 1,
+                                            board.current_room_x, y - 1,
                                             x,
                                             board.items_map_for_current_level,
                                             characters[index],
@@ -953,42 +942,19 @@ def main(index, characters):
                                     else:
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y + 1,
+                                            board.current_room_x, y - 1,
                                             x,
                                             board.items_map_for_current_level,
                                             characters[index],
                                             board.player_data,
                                             board.enemies_from_db[key][1],
                                             enemy_mas_data)
-                        if is_defeated:
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y + 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y - 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x + 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x + 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x - 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x - 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
+                            if is_defeated[0]:
+                                for key in range(40, 44):
+                                    for enemy in range(len(board.enemies[f'{key}']) - 1):
+                                        if board.enemies[f'{key}'][enemy][-1] == is_defeated[-1] and \
+                                                board.enemies[f'{key}'][enemy][-2] == is_defeated[-2]:
+                                            board.enemies[f'{key}'].pop(enemy)
 
                 if event.key == pygame.K_RIGHT:
                     board.enemies, board.items_map_for_current_level, battle_enemies = enemies_moves(board.enemies,
@@ -1042,6 +1008,12 @@ def main(index, characters):
                         for key in board.enemies:
                             for enemy in board.enemies[key]:
                                 if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                    enemy[-2] == y - 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y + 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x - 1) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
                                         enemy[-2] == y and enemy[-1] == x + 1):
                                     enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
                                     for key1 in board.allies:
@@ -1073,7 +1045,7 @@ def main(index, characters):
                                                             continue
                                                     item_name_str = board.items[f'{keyy}'][1]
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y, x + 1,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -1083,7 +1055,7 @@ def main(index, characters):
                                                         allie=board.allies_from_db[key1][1])
                                                 else:
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y, x + 1,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -1115,8 +1087,8 @@ def main(index, characters):
                                         item_name_str = board.items[f'{keyy}'][1]
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y,
-                                            x + 1,
+                                            board.current_room_x, y - 1,
+                                            x,
                                             board.items_map_for_current_level,
                                             characters[index],
                                             board.player_data,
@@ -1128,42 +1100,19 @@ def main(index, characters):
                                     else:
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y,
-                                            x + 1,
+                                            board.current_room_x, y - 1,
+                                            x,
                                             board.items_map_for_current_level,
                                             characters[index],
                                             board.player_data,
                                             board.enemies_from_db[key][1],
                                             enemy_mas_data)
-                        if is_defeated:
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y + 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y + 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y - 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x + 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x + 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x - 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x - 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
+                            if is_defeated[0]:
+                                for key in range(40, 44):
+                                    for enemy in range(len(board.enemies[f'{key}']) - 1):
+                                        if board.enemies[f'{key}'][enemy][-1] == is_defeated[-1] and \
+                                                board.enemies[f'{key}'][enemy][-2] == is_defeated[-2]:
+                                            board.enemies[f'{key}'].pop(enemy)
 
                 if event.key == pygame.K_LEFT:
                     board.enemies, board.items_map_for_current_level, battle_enemies = enemies_moves(board.enemies,
@@ -1227,7 +1176,13 @@ def main(index, characters):
                         for key in board.enemies:
                             for enemy in board.enemies[key]:
                                 if (enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
-                                        enemy[-2] == y and enemy[-1] == x - 1):
+                                    enemy[-2] == y - 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y + 1 and enemy[-1] == x) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x - 1) or (
+                                        enemy[-4] == board.current_room_y and enemy[-3] == board.current_room_x and
+                                        enemy[-2] == y and enemy[-1] == x + 1):
                                     enemy_mas_data = [enemy[0], enemy[1], enemy[2]]
                                     for key1 in board.allies:
                                         for allie in board.allies[key1]:
@@ -1258,7 +1213,7 @@ def main(index, characters):
                                                             continue
                                                     item_name_str = board.items[f'{keyy}'][1]
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y, x - 1,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -1268,7 +1223,7 @@ def main(index, characters):
                                                         allie=board.allies_from_db[key1][1])
                                                 else:
                                                     board.items_map_for_current_level, is_defeated = battle_screen(
-                                                        board.current_room_y, board.current_room_x, y, x - 1,
+                                                        board.current_room_y, board.current_room_x, y - 1, x,
                                                         board.items_map_for_current_level, characters[index],
                                                         board.player_data,
                                                         board.enemies_from_db[key][1],
@@ -1300,8 +1255,8 @@ def main(index, characters):
                                         item_name_str = board.items[f'{keyy}'][1]
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y,
-                                            x - 1,
+                                            board.current_room_x, y - 1,
+                                            x,
                                             board.items_map_for_current_level,
                                             characters[index],
                                             board.player_data,
@@ -1313,44 +1268,20 @@ def main(index, characters):
                                     else:
                                         board.items_map_for_current_level, is_defeated = battle_screen(
                                             board.current_room_y,
-                                            board.current_room_x, y,
-                                            x - 1,
+                                            board.current_room_x, y - 1,
+                                            x,
                                             board.items_map_for_current_level,
                                             characters[index],
                                             board.player_data,
                                             board.enemies_from_db[key][1],
                                             enemy_mas_data)
-                        if is_defeated:
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y + 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y - 1][
-                                x] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x and enemy[-2] == y - 1:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x + 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x + 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
-                            if board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][
-                                x - 1] in [
-                                f'{b}' for b in range(40, 44)]:
-                                for key in range(len(board.enemies)):
-                                    for enemy in range(len(board.enemies[key])):
-                                        if enemy[-1] == x - 1 and enemy[-2] == y:
-                                            board.enemies[key].pop(enemy)
-                            else:
-                                print(1)
+
+                            if is_defeated[0]:
+                                for key in range(40, 44):
+                                    for enemy in range(len(board.enemies[f'{key}']) - 1):
+                                        if board.enemies[f'{key}'][enemy][-1] == is_defeated[-1] and \
+                                                board.enemies[f'{key}'][enemy][-2] == is_defeated[-2]:
+                                            board.enemies[f'{key}'].pop(enemy)
 
         y, x = board.return_player_coords()
         item_id = board.items_map_for_current_level[board.current_room_y][board.current_room_x][y][x]
