@@ -18,6 +18,26 @@ screen = pygame.display.set_mode(size)
 
 clock = pygame.time.Clock()
 
+def victory_screen():
+    pygame.init()
+
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 120)
+    string_rendered = font.render('ВЫ ПОБЕДИЛИ!', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (1920 // 4 + 30, 1080 // 4 + 30))
+    font = pygame.font.Font('fonts\\Hombre Regular.otf', 60)
+    string_rendered = font.render('Для выхода, нажмите SPACE', 1, pygame.Color('WHITE'))
+    screen.blit(string_rendered, (580, 720))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    sys.exit()
+        pygame.display.flip()
+        clock.tick(FPS)
 
 def game_over():
     pygame.init()
@@ -163,8 +183,9 @@ def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, charact
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if not battle_in_progress:
-                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
-                        battle_in_progress = True
+                        if not victory:
+                            battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                            battle_in_progress = True
                 if event.key == pygame.K_u:
                     if battle_in_progress:
                         if is_there_item:
@@ -182,34 +203,38 @@ def battle_screen(map_y, map_x, room_y, room_x, itemmap, character_name, charact
                                 used_item = True
 
                 if event.key == pygame.K_a:
-                    if who_is_first_bool:
-                        enemy_mas[0] -= character_mas[1]
-                        who_is_first_bool = 0
-                        attacked_func()
-                        c = 0
-                        while c != 6000:
-                            pygame.display.flip()
-                            clock.tick(FPS)
-                            c += 60
-                        c = 0
-                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                    if character_mas[3] > 0:
+                        if who_is_first_bool:
+                            enemy_mas[0] -= int(character_mas[1] * ((100 - enemy_mas[2]) / 100))
+                            who_is_first_bool = 0
+                            attacked_func()
+                            c = 0
+                            while c != 6000:
+                                pygame.display.flip()
+                                clock.tick(FPS)
+                                c += 60
+                            c = 0
+                            battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                        else:
+                            character_mas[0] -= int(enemy_mas[1] * ((100 - character_mas[2]) / 100))
+                            who_is_first_bool = 1
+                            being_attacked_func()
+                            d = 0
+                            while d != 6000:
+                                pygame.display.flip()
+                                clock.tick(FPS)
+                                d += 60
+                            d = 0
+                            battle(font, is_there_allie, allie, is_there_item, item_name, item)
+                        if character_mas[0] <= 0:
+                            game_over()
+                        if enemy_mas[0] <= 0:
+                            itemmap[map_y][map_x][room_y][room_x] = '0'
+                            victory = True
+                            #  return itemmap, [True, room_y, room_x]
+                        character_mas[3] -= randint(1, 3)
                     else:
-                        character_mas[0] -= enemy_mas[1]
-                        who_is_first_bool = 1
-                        being_attacked_func()
-                        d = 0
-                        while d != 6000:
-                            pygame.display.flip()
-                            clock.tick(FPS)
-                            d += 60
-                        d = 0
-                        battle(font, is_there_allie, allie, is_there_item, item_name, item)
-                    if character_mas[0] <= 0:
                         game_over()
-                    if enemy_mas[0] <= 0:
-                        itemmap[map_y][map_x][room_y][room_x] = '0'
-                        victory = True
-                        #  return itemmap, [True, room_y, room_x]
 
         if battle_in_progress and not who_is_first_bool_is_showed:
             who_is_first(who_is_first_bool)
@@ -1320,6 +1345,136 @@ def main(index, characters):
             board.inventory_render(screen)
 
         #  player_data_print = board.player_data
+
+        if (board.game_map[board.current_room_y][
+            board.current_room_x] == f'{board.value_of_rooms_int}' and x > 2 and y > 2
+                and x < 25 and y < 11):
+            for key1 in board.allies:
+                for allie in board.allies[key1]:
+                    if allie[-4] == board.current_room_y and allie[-3] == board.current_room_x:
+                        is_there_items = False
+                        for key2 in board.character_inventory:
+                            for type_of_item in board.character_inventory[key2]:
+                                if len(type_of_item) != 0:
+                                    is_there_items = True
+                        if is_there_items:
+                            flag = True
+                            while flag:
+                                keyy = randint(70, 76)
+                                if len(board.character_inventory[f'{keyy}']) != 0:
+                                    indexxx = randint(0,
+                                                      len(board.character_inventory[
+                                                              f'{keyy}']) - 1)
+                                    if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                                        item = board.character_inventory[f'{keyy}'][indexxx][
+                                            randint(0, len(
+                                                board.character_inventory[f'{keyy}'][
+                                                    indexxx]) - 1)]
+                                        item = board.character_inventory[f'{keyy}'][indexxx]
+                                        flag = False
+                                    else:
+                                        continue
+                                else:
+                                    continue
+                            item_name_str = board.items[f'{keyy}'][1]
+                            boss_data = board.enemies_from_db['44']
+                            boss_data_inp = [randint(boss_data[3],
+                                                     boss_data[4]),
+                                             randint(boss_data[5],
+                                                     boss_data[6]),
+                                             randint(boss_data[7],
+                                                     boss_data[8]),
+                                             board.current_room_y, board.current_room_x, y, x]
+                            board.items_map_for_current_level, is_defeated = battle_screen(
+                                board.current_room_y, board.current_room_x, y - 1, x,
+                                board.items_map_for_current_level, characters[index],
+                                board.player_data,
+                                board.enemies_from_db['44'][1], boss_data_inp
+                                , is_there_item=is_there_items,
+                                item_name=item_name_str,
+                                item=item, is_there_allie=True,
+                                allie=board.allies_from_db[key1][1])
+                        else:
+                            boss_data = board.enemies_from_db['44']
+                            boss_data_inp = [randint(boss_data[3],
+                                                     boss_data[4]),
+                                             randint(boss_data[5],
+                                                     boss_data[6]),
+                                             randint(boss_data[7],
+                                                     boss_data[8]),
+                                             board.current_room_y, board.current_room_x, y, x]
+                            board.items_map_for_current_level, is_defeated = battle_screen(
+                                board.current_room_y, board.current_room_x, y - 1, x,
+                                board.items_map_for_current_level, characters[index],
+                                board.player_data,
+                                board.enemies_from_db['44'][1],
+                                boss_data_inp, is_there_allie=True,
+                                allie=board.allies_from_db[key1][1])
+            is_there_items = False
+            for key2 in board.character_inventory:
+                for type_of_item in board.character_inventory[key2]:
+                    if len(type_of_item) != 0:
+                        is_there_items = True
+            if is_there_items:
+                flag = True
+                while flag:
+                    keyy = randint(70, 76)
+                    if len(board.character_inventory[f'{keyy}']) != 0:
+                        indexxx = randint(0,
+                                          len(board.character_inventory[f'{keyy}']) - 1)
+                        if len(board.character_inventory[f'{keyy}'][indexxx]) != 0:
+                            item = board.character_inventory[f'{keyy}'][indexxx][
+                                randint(0, len(
+                                    board.character_inventory[f'{keyy}'][
+                                        indexxx]) - 1)]
+                            item = board.character_inventory[f'{keyy}'][indexxx]
+                            flag = False
+                        else:
+                            continue
+                    else:
+                        continue
+                item_name_str = board.items[f'{keyy}'][1]
+                boss_data = board.enemies_from_db['44']
+                boss_data_inp = [randint(boss_data[3],
+                                         boss_data[4]),
+                                 randint(boss_data[5],
+                                         boss_data[6]),
+                                 randint(boss_data[7],
+                                         boss_data[8]),
+                                 board.current_room_y, board.current_room_x, y, x]
+                board.items_map_for_current_level, is_defeated = battle_screen(
+                    board.current_room_y,
+                    board.current_room_x, y - 1,
+                    x,
+                    board.items_map_for_current_level,
+                    characters[index],
+                    board.player_data,
+                    board.enemies_from_db['44'][1],
+                    boss_data_inp,
+                    is_there_item=is_there_items,
+                    item_name=item_name_str,
+                    item=item)
+            else:
+                boss_data = board.enemies_from_db['44']
+                boss_data_inp = [randint(boss_data[3],
+                                         boss_data[4]),
+                                 randint(boss_data[5],
+                                         boss_data[6]),
+                                 randint(boss_data[7],
+                                         boss_data[8]),
+                                 board.current_room_y, board.current_room_x, y, x]
+                board.items_map_for_current_level, is_defeated = battle_screen(
+                    board.current_room_y,
+                    board.current_room_x, y - 1,
+                    x,
+                    board.items_map_for_current_level,
+                    characters[index],
+                    board.player_data,
+                    board.enemies_from_db['44'][1],
+                    boss_data_inp)
+
+            if is_defeated[0]:
+                victory_screen()
 
         if moving_r:
             animation_x_for_r += 1500

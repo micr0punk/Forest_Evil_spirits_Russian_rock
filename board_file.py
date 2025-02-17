@@ -103,6 +103,7 @@ class Board:
         self.currentlevel = choice(pool_of_levelmaps)
 
         self.currentlevel = current_map
+        self.value_of_rooms_int = value_of_rooms(self.currentlevel)
 
         self.rooms_list = [[0] * x_cells for _ in range(y_cells)]
 
@@ -264,7 +265,7 @@ class Board:
         self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
         self.daemon_sprite = AnimatedSprite(load_image("daemon.png"), 8, 1, 64, 64)
         self.daemon_image = self.daemon_sprite.frames[self.daemon_sprite.cur_frame]
-        self.frogger_sprite = AnimatedSprite(load_image("frogger.png"), 4, 1, 128, 128)
+        self.frogger_sprite = AnimatedSprite(load_image("frogger.png"), 5, 1, 128, 128)
         self.frogger_image = self.frogger_sprite.frames[self.frogger_sprite.cur_frame]
 
         if character == 'Маг':
@@ -352,6 +353,9 @@ class Board:
                             screen.blit(self.fool_image, (x * self.cs + self.left, y * self.cs + self.top))
                         if self.items_for_render[y][x] == '34':
                             screen.blit(self.anarchist_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.game_map[self.current_room_y][self.current_room_x] == f'{self.value_of_rooms_int}':
+                    self.frogger_image = self.frogger_sprite.frames[self.frogger_sprite.cur_frame]
+                    screen.blit(self.frogger_image, (850, 350))
                 if self.player[y][x] == '5':
                     self.player_image = self.player_sprite.frames[self.player_sprite.cur_frame]
                     screen.blit(self.player_image, (x * self.cs + self.left, y * self.cs + self.top))

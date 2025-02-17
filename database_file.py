@@ -50,6 +50,7 @@ def load_enemies_from_db():
                            '41': data[1],
                            '42': data[2],
                            '43': data[3],
+                           '44': data[4]
                            }
 
             return data_output
