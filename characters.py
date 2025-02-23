@@ -10,9 +10,10 @@ class Mage:
         self.energy = randint(stats[0][9], stats[0][10])
         self.luck = randint(stats[0][11], stats[0][12])
         self.id = 31
+        self.steps_without_battle = 10
 
     def return_data(self):
-        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id]
+        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id, self.steps_without_battle]
 
 
 class Forester:
@@ -24,9 +25,10 @@ class Forester:
         self.energy = randint(stats[0][9], stats[0][10])
         self.luck = randint(stats[0][11], stats[0][12])
         self.id = 32
+        self.steps_without_battle = 10
 
     def return_data(self):
-        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id]
+        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id, self.steps_without_battle]
 
 
 class Fool:
@@ -38,9 +40,10 @@ class Fool:
         self.energy = randint(stats[0][9], stats[0][10])
         self.luck = randint(stats[0][11], stats[0][12])
         self.id = 33
+        self.steps_without_battle = 10
 
     def return_data(self):
-        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id]
+        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id, self.steps_without_battle]
 
 
 class Anarchist:
@@ -52,6 +55,7 @@ class Anarchist:
         self.energy = randint(stats[0][9], stats[0][10])
         self.luck = randint(stats[0][11], stats[0][12])
         self.id = 34
+        self.steps_without_battle = 10
 
     def return_data(self):
-        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id]
+        return [self.hp, self.damage, self.protection, self.energy, self.luck, self.id, self.steps_without_battle]

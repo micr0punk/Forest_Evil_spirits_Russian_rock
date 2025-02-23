@@ -50,6 +50,7 @@ def load_enemies_from_db():
                            '41': data[1],
                            '42': data[2],
                            '43': data[3],
+                           '44': data[4]
                            }
 
             return data_output
@@ -66,9 +67,9 @@ def load_allies_from_db(excluded_character):
             data = list(cursor.execute('''SELECT * FROM characters_stats''').fetchall())
 
             data_output = {'31': data[0] if excluded_character != 'Маг' else None,
-                           '32': data[0] if excluded_character != 'Лесник' else None,
-                           '33': data[0] if excluded_character != 'Шут' else None,
-                           '34': data[0] if excluded_character != 'Анархист' else None
+                           '32': data[1] if excluded_character != 'Лесник' else None,
+                           '33': data[2] if excluded_character != 'Шут' else None,
+                           '34': data[3] if excluded_character != 'Анархист' else None
                            }
 
             return data_output

@@ -1,11 +1,13 @@
-import pygame
-import sys
 import csv
-from random import choice, randint
+import sys
 from pathlib import Path
-from load_image_file import load_image
+from random import choice, randint
+
+import pygame
+
 from animated_sprite import AnimatedSprite
 from database_file import load_items_from_db, load_enemies_from_db, load_allies_from_db
+from load_image_file import load_image
 
 
 # def write_csv(arr_save, name_csv):
@@ -101,6 +103,7 @@ class Board:
         self.currentlevel = choice(pool_of_levelmaps)
 
         self.currentlevel = current_map
+        self.value_of_rooms_int = value_of_rooms(self.currentlevel)
 
         self.rooms_list = [[0] * x_cells for _ in range(y_cells)]
 
@@ -159,8 +162,8 @@ class Board:
                     x, y = (x_and_y_from_game_map_current[0],
                             x_and_y_from_game_map_current[1])
                     while flag:
-                        room_rnd_x = randint(2, x_cells - 3)
-                        room_rnd_y = randint(3, y_cells - 3)
+                        room_rnd_x = randint(3, x_cells - 4)
+                        room_rnd_y = randint(3, y_cells - 4)
                         if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] == '2':
                             if self.items_map_for_current_level[y][x][room_rnd_y][room_rnd_x] == '0':
                                 if str(item_id) in [f'{h}' for h in range(50, 77)]:
@@ -178,13 +181,15 @@ class Board:
 
                                     if count_allies < 3:
                                         for id_allies in range(31, 35):
-                                            if id_allies == self.player_data[5] or len(self.allies[str(id_allies)]) != 0: continue
+                                            if id_allies == self.player_data[5] or len(
+                                                    self.allies[str(id_allies)]) != 0: continue
                                             add_allies = False
                                             flag2 = True
                                             while flag2:
                                                 room_rnd2_x = randint(2, x_cells - 3)
                                                 room_rnd2_y = randint(3, y_cells - 3)
-                                                if self.objectmaps_for_current_level[y][x][room_rnd2_y][room_rnd2_x] == '2':
+                                                if self.objectmaps_for_current_level[y][x][room_rnd2_y][
+                                                    room_rnd2_x] == '2':
                                                     if self.items_map_for_current_level[y][x][room_rnd2_y][
                                                         room_rnd2_x] == '0':
                                                         self.allies[str(id_allies)].append(
@@ -194,7 +199,6 @@ class Board:
                                                                      self.allies_from_db[str(id_allies)][6]),
                                                              randint(self.allies_from_db[str(id_allies)][7],
                                                                      self.allies_from_db[str(id_allies)][8]),
-                                                             # 6, 13, room_rnd_y, room_rnd_x])
                                                              y, x, room_rnd2_y, room_rnd2_x])
                                                         self.items_map_for_current_level[y][x][room_rnd2_y][
                                                             room_rnd2_x] = str(id_allies)
@@ -215,7 +219,7 @@ class Board:
                                 #                                           randint(self.allies_from_db[str(item_id)][7],
                                 #                                                   self.allies_from_db[str(item_id)][8]),
                                 #                                           6, 13, room_rnd_y, room_rnd_x])
-                                #                                           #y, x, room_rnd_y, room_rnd_x])
+                                #                                           y, x, room_rnd_y, room_rnd_x)
 
                                 flag = False
 
@@ -261,7 +265,7 @@ class Board:
         self.skeleton_image = self.skeleton_sprite.frames[self.skeleton_sprite.cur_frame]
         self.daemon_sprite = AnimatedSprite(load_image("daemon.png"), 8, 1, 64, 64)
         self.daemon_image = self.daemon_sprite.frames[self.daemon_sprite.cur_frame]
-        self.frogger_sprite = AnimatedSprite(load_image("frogger.png"), 4, 1, 128, 128)
+        self.frogger_sprite = AnimatedSprite(load_image("frogger.png"), 5, 1, 128, 128)
         self.frogger_image = self.frogger_sprite.frames[self.frogger_sprite.cur_frame]
 
         if character == 'Маг':
@@ -349,6 +353,9 @@ class Board:
                             screen.blit(self.fool_image, (x * self.cs + self.left, y * self.cs + self.top))
                         if self.items_for_render[y][x] == '34':
                             screen.blit(self.anarchist_image, (x * self.cs + self.left, y * self.cs + self.top))
+                if self.game_map[self.current_room_y][self.current_room_x] == f'{self.value_of_rooms_int}':
+                    self.frogger_image = self.frogger_sprite.frames[self.frogger_sprite.cur_frame]
+                    screen.blit(self.frogger_image, (850, 350))
                 if self.player[y][x] == '5':
                     self.player_image = self.player_sprite.frames[self.player_sprite.cur_frame]
                     screen.blit(self.player_image, (x * self.cs + self.left, y * self.cs + self.top))

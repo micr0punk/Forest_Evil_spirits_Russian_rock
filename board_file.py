@@ -162,8 +162,8 @@ class Board:
                     x, y = (x_and_y_from_game_map_current[0],
                             x_and_y_from_game_map_current[1])
                     while flag:
-                        room_rnd_x = randint(2, x_cells - 3)
-                        room_rnd_y = randint(3, y_cells - 3)
+                        room_rnd_x = randint(3, x_cells - 4)
+                        room_rnd_y = randint(3, y_cells - 4)
                         if self.objectmaps_for_current_level[y][x][room_rnd_y][room_rnd_x] == '2':
                             if self.items_map_for_current_level[y][x][room_rnd_y][room_rnd_x] == '0':
                                 if str(item_id) in [f'{h}' for h in range(50, 77)]:
