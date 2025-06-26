@@ -1,5 +1,5 @@
 С игрой можно ознакомиться, скачав архив по ссылке ниже:
-https://disk.yandex.ru/d/4VOYGEULrxYsIw
+https://disk.yandex.ru/d/g1lMssDgHL-6HQ
 
 Инструкция по установке:
 1. Распаковать архив в удобное место
